@@ -737,7 +737,6 @@ abc.mcmc3 <- function(thetaold,parx,rwsdvec,Cx,LFx,lam.lf=1,Ix,sd.cpue) {
   lfhat <- rezz$LF
   lfobs <- LFx
   disc.lf <- 0
-    browser()
   for(k in 1:dim(lfhat)[2]) {
     
     P <- lfobs[,k]
