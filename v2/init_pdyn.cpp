@@ -6,7 +6,7 @@
 
 #include <Rcpp.h>
 #include <R.h>
-#include "mdarrays.h"
+#include "mdarrclass.h"
 
 using namespace Rcpp;
 
@@ -33,19 +33,19 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
   // reconstruct back into multi-dim arrays
   
-  double ***mata;
-  double ***wta;
-  double **hinit;
-  double **C;
-  double ****sela;
-  double ***N;
-
-  mata = arr3(na,ns,2); // age + season + sex
-  wta = arr3(na,ns,2);  // age + season + sex
-  hinit = arr2(ns,nf); // season + fishery
-  C =  arr2(ns,nf); // season + fishery
-  sela = arr4(na,ns,2,nf); // age + season + sex + fishery
-  N = arr3(na,ns,2); // age + season + sex
+  arr3d mata;
+  arr3d wta;
+  arr2d hinit;
+  arr2d C;
+  arr4d sela;
+  arr3d N;
+  
+  mata.arr3(na,ns,2); // age + season + sex
+  wta.arr3(na,ns,2);  // age + season + sex
+  hinit.arr2(ns,nf); // season + fishery
+  C.arr2(ns,nf); // season + fishery
+  sela.arr4(na,ns,2,nf); // age + season + sex + fishery
+  N.arr3(na,ns,2); // age + season + sex
   NumericVector cvec(ns*nf); // return catch object
   NumericVector nvec(na*ns*2); // return numbers object
 
@@ -56,8 +56,8 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
       for(a=0;a<na;a++) {
 
         elem = na*ns*g+na*s+a;
-        mata[a][s][g] = matv(elem);
-        wta[a][s][g] = wtv(elem);
+        mata(a,s,g) = matv(elem);
+        wta(a,s,g) = wtv(elem);
 
       }
     }
@@ -67,7 +67,7 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
     for(s=0;s<ns;s++) {
       
       elem = ns*f+s;
-      hinit[s][f] = hinitv(elem);
+      hinit(s,f) = hinitv(elem);
 
     }
   } 
@@ -78,7 +78,7 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
         for(a=0;a<na;a++) {
 
           elem = na*ns*2*f+na*ns*g+na*s+a;
-          sela[a][s][g][f] = selv(elem);
+          sela(a,s,g,f) = selv(elem);
 
         }
       }
@@ -98,14 +98,14 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
   for(g=0;g<2;g++) {
     for(s=0;s<ns;s++) {
 
-      if(s < srec) N[0][s][g] = 0.;
+      if(s < srec) N(0,s,g) = 0.;
       if(s == srec) {
 
-        if(g == 0) N[0][s][g] = psi;
-        if(g == 1) N[0][s][g] = 1.-psi;
+        if(g == 0) N(0,s,g) = psi;
+        if(g == 1) N(0,s,g) = 1.-psi;
 
       }
-      if(s > srec) N[0][s][g] = N[0][s-1][g]*exp(-M);
+      if(s > srec) N(0,s,g) = N(0,s-1,g)*exp(-M);
       
     }
 
@@ -115,18 +115,18 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
         if(s == 0) {
 
-          N[a][0][g] = N[a-1][ns-1][g]*exp(-M);
+          N(a,0,g) = N(a-1,ns-1,g)*exp(-M);
 
         } else {
 
-          N[a][s][g] = N[a][s-1][g]*exp(-M);
+          N(a,s,g) = N(a,s-1,g)*exp(-M);
       
         }
       }
     }
   }
 
-  for(spr0=0.,a=0;a<na;a++) spr0 += N[a][spwn][0]*mata[a][spwn][0]*wta[a][spwn][0]; 
+  for(spr0=0.,a=0;a<na;a++) spr0 += N(a,spwn,0)*mata(a,spwn,0)*wta(a,spwn,0); 
 
   // exploited equilibrium
 
@@ -135,18 +135,19 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
   for(g=0;g<2;g++) {
     for(s=0;s<ns;s++) {
 
-      if(s < srec) N[0][s][g] = 0.;
+      if(s < srec) N(0,s,g) = 0.;
       if(s == srec) {
 
-        if(g == 0) N[0][s][g] = psi;
-        if(g == 1) N[0][s][g] = 1.-psi;
+        if(g == 0) N(0,s,g) = psi;
+        if(g == 1) N(0,s,g) = 1.-psi;
 
       } 
+
       if(s > srec) {
         
-        for(hsum=0.,f=0;f<nf;f++) hsum += hinit[s-1][f]*sela[0][s-1][g][f];
+        for(hsum=0.,f=0;f<nf;f++) hsum += hinit(s-1,f)*sela(0,s-1,g,f);
         hsum = hsum > 0.9 ? 0.9 : hsum;
-        N[0][s][g] = N[0][s-1][g]*exp(-M)*(1.-hsum);
+        N(0,s,g) = N(0,s-1,g)*exp(-M)*(1.-hsum);
 
       }
     }
@@ -157,29 +158,29 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
         if(s == 0) {
 
-          for(hsum=0.,f=0;f<nf;f++) hsum += hinit[ns-1][f]*sela[a-1][ns-1][g][f]; 
+          for(hsum=0.,f=0;f<nf;f++) hsum += hinit(ns-1,f)*sela(a-1,ns-1,g,f); 
           hsum = hsum > 0.9 ? 0.9 : hsum;
-          N[a][0][g] = N[a-1][ns-1][g]*exp(-M)*(1.-hsum);
+          N(a,0,g) = N(a-1,ns-1,g)*exp(-M)*(1.-hsum);
 
         } else {
 
-          for(hsum=0.,f=0;f<nf;f++) hsum += hinit[s-1][f]*sela[a][s-1][g][f]; 
+          for(hsum=0.,f=0;f<nf;f++) hsum += hinit(s-1,f)*sela(a,s-1,g,f); 
           hsum = hsum > 0.9 ? 0.9 : hsum;
-          N[a][s][g] = N[a][s-1][g]*exp(-M)*(1.-hsum);
+          N(a,s,g) = N(a,s-1,g)*exp(-M)*(1.-hsum);
       
         }
       }
     }
   }
 
-  for(sprf=0.,a=0;a<na;a++) sprf += N[a][spwn][0]*mata[a][spwn][0]*wta[a][spwn][0]; 
+  for(sprf=0.,a=0;a<na;a++) sprf += N(a,spwn,0)*mata(a,spwn,0)*wta(a,spwn,0); 
 
   for(g=0;g<2;g++) {
     for(s=0;s<ns;s++) { 
       for(a=0;a<na;a++) {
 
         elem = na*ns*g+na*s+a;
-        nvec(elem) = N[a][s][g];
+        nvec(elem) = N(a,s,g);
 
       }
     }
@@ -190,10 +191,10 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
   for(s=0;s<ns;s++) {
     for(f=0;f<nf;f++) {
 
-      C[s][f] = 0.; 
+      C(s,f) = 0.; 
       for(g=0;g<2;g++) { 
        
-        for(a=0;a<na;a++) C[s][f] += N[a][s][g]*wta[a][s][g]*sela[a][s][g][f]*hinit[s][f];
+        for(a=0;a<na;a++) C(s,f) += N(a,s,g)*wta(a,s,g)*sela(a,s,g,f)*hinit(s,f);
 
       }
     }
@@ -203,7 +204,7 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
     for(s=0;s<ns;s++) {
 
        elem = ns*f+s;
-       cvec(elem) = C[s][f];
+       cvec(elem) = C(s,f);
 
     }
   }
