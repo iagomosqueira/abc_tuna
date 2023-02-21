@@ -181,26 +181,21 @@ RcppExport SEXP msypdyn(SEXP dm_,SEXP srec_,SEXP R0_,SEXP hh_,SEXP psi_,SEXP M_,
   double bet = (5.*hh-1.)/(B0*(1.-hh));
   double Bbar = (alp*sprf-1.)/bet > 0. ? (alp*sprf-1.)/bet : 0.;
   double Rbar = Bbar/sprf;
-  double Rg;
 
   // scale the exploited population by Rbar
 
-  for(g=0;g<2;g++) {
-
-    Rg = g == 0 ? Rbar*psi : Rbar*(1-psi);
+  for(g=0;g<2;g++) 
     for(s=0;s<ns;s++) 
-      for(a=0;a<na;a++) N[a][s][g] *= Rg; 
-
-  }
-
+      for(a=0;a<na;a++) N[a][s][g] *= Rbar; 
 
   // catch biomass-by-fleet
 
-  for(g=0;g<2;g++) {
-    for(s=0;s<ns;s++) {
-      for(f=0;f<nf;f++) {
-
-        C[s][f] = 0.;
+  for(s=0;s<ns;s++) {
+    for(f=0;f<nf;f++) {
+      
+      C[s][f] = 0.; 
+      for(g=0;g<2;g++) {
+        
         for(a=0;a<na;a++) C[s][f] += N[a][s][g]*wta[a][s][g]*sela[a][s][g][f]*hinit[s][f];
 
       }

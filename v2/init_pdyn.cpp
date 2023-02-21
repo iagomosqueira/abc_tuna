@@ -47,6 +47,7 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
   sela = arr4(na,ns,2,nf); // age + season + sex + fishery
   N = arr3(na,ns,2); // age + season + sex
   NumericVector cvec(ns*nf); // return catch object
+  NumericVector nvec(na*ns*2); // return numbers object
 
   int elem;
 
@@ -173,13 +174,25 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
   for(sprf=0.,a=0;a<na;a++) sprf += N[a][spwn][0]*mata[a][spwn][0]*wta[a][spwn][0]; 
 
+  for(g=0;g<2;g++) {
+    for(s=0;s<ns;s++) { 
+      for(a=0;a<na;a++) {
+
+        elem = na*ns*g+na*s+a;
+        nvec(elem) = N[a][s][g];
+
+      }
+    }
+  }
+
   // catch biomass-by-fleet
 
-  for(g=0;g<2;g++) {
-    for(s=0;s<ns;s++) {
-      for(f=0;f<nf;f++) {
+  for(s=0;s<ns;s++) {
+    for(f=0;f<nf;f++) {
 
-        C[s][f] = 0.;
+      C[s][f] = 0.; 
+      for(g=0;g<2;g++) { 
+       
         for(a=0;a<na;a++) C[s][f] += N[a][s][g]*wta[a][s][g]*sela[a][s][g][f]*hinit[s][f];
 
       }
@@ -197,7 +210,7 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
 
   double rho = sprf/spr0;
-  List res = Rcpp::List::create(Named("rho")=rho,Named("C")=cvec,Named("spr0")=spr0);
+  List res = Rcpp::List::create(Named("rho")=rho,Named("C")=cvec,Named("N")=nvec,Named("spr0")=spr0);
   
   return Rcpp::wrap(res);
 

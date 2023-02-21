@@ -111,7 +111,7 @@ targv <- logit(c(rhotarg,pctarg))
 
 # wrapper objective function to solve (minimise)
 
-fnscale <- 10 # scalar to give objective function some bite
+fnscale <- 1 # scalar to give objective function some bite
 
 objfn.init <- function(theta) {
 
@@ -130,7 +130,7 @@ theta <- logit(as.vector(hinit))
 system.time(zz <- optim(theta,objfn.init,method=("L-BFGS-B"),control=list(trace=1)))
 
 hinit <- array(ilogit(zz$par),dim=c(ns,nf))
-resinit <- initpdyn(c(ns,na,nf),srec,psi,M,as.vector(mata),as.vector(wta),as.vector(sela),hinit) 
+resinit <- initpdyn(c(ns,na,nf),srec,psi,M,as.vector(mata),as.vector(wta),as.vector(sela),as.vector(hinit)) 
 
 ######################
 # MSY estimation bit #
@@ -160,10 +160,41 @@ Hmsy <- msy$maximum
 Cmsy <- msy$objective
 resmsy <- msypdyn(c(ns,na,nf),srec,R0,hh,psi,M,as.vector(mata),as.vector(wta),as.vector(sela),Hmsy*ph)
 Bmsy <- resmsy$Bmsy
-B0 <- R0*resinit$spr0
+spr0 <- resinit$spr0
+B0 <- R0*spr0
+alp <- 4*hh/(spr0*(1-hh))
+bet <- (5*hh-1)/(B0*(1-hh))
 Bratio <- Bmsy/B0
 Bratio
 Rratio <- resmsy$Rmsy/R0
 Rratio
 (4*hh*Bratio)/(hh*(5*Bratio-1)+1-Bratio) # B-H invariant check - should be same as Rratio
+
+# set up initial numbers-at-age for input to population dynamics
+
+Rinit <- R0*(4*hh*del)/(hh*(5*del-1)+1-del)
+Ninit <- array(resinit$N,dim=c(na,ns,2))
+Ninit[] <- Ninit[]*Rinit
+nvec <- as.vector(Ninit)
+
+# expected catch @ hinit
+
+zinit <- msypdyn(c(ns,na,nf),srec,R0,hh,psi,M,as.vector(mata),as.vector(wta),as.vector(sela),as.vector(hinit))
+Cinit <- array(zinit$C,dim=c(ns,nf))
+
+# main population stuff
+
+sourceCpp("pdyn.cpp")
+
+ny <- 10
+epsr <- rep(0,ny-1)
+Cb <- array(dim=c(ny,ns,nf))
+for(y in 1:ny) Cb[y,,] <- Cinit
+cvec <- as.vector(Cb)
+
+resp <- pdyn(c(ny,ns,na,nf),srec,R0,hh,psi,epsr,spr0,M,as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec)
+
+N <- array(resp$N,dim=c(ny,na,ns,2))
+S <- array(resp$S,dim=c(ny,ns))
+H <- array(resp$H,dim=c(ny,ns,nf))
 
