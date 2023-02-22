@@ -198,3 +198,41 @@ N <- array(resp$N,dim=c(ny,na,ns,2))
 S <- array(resp$S,dim=c(ny,ns))
 H <- array(resp$H,dim=c(ny,ns,nf))
 
+####################################
+# generating predicted LF and CPUE #
+####################################
+
+sourceCpp("pdyn_lfcpue.cpp")
+
+# p(l | a, s, g)
+
+lbins <- seq(0,120,by=6)
+nbins <- length(lbins)-1
+mulbins <- 0.5*(lbins[-1]+lbins[-length(lbins)])
+
+pla <- array(dim=c(nbins,na,ns,2))
+
+for(g in 1:2) {
+  for(s in 1:ns) {
+    for(a in 1:na) {
+
+      dx <- dnorm(log(mulbins),log(mula[a,s,g]),sdla[g],FALSE)
+      dx <- dx/sum(dx)
+      pla[,a,s,g] <- dx 
+
+    }
+  }
+}
+
+# fishery for CPUE generation
+
+fref <- 1
+
+resp2 <- pdynlfcpue(c(ny,ns,na,nl,nf),srec,R0,hh,psi,epsr,spr0,M,as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),fref)
+
+N <- array(resp2$N,dim=c(ny,na,ns,2))
+S <- array(resp2$S,dim=c(ny,ns))
+H <- array(resp2$H,dim=c(ny,ns,nf))
+LF <- array(resp2$LF,dim=c(ny,nbins,ns,nf))
+I <- array(resp2$I,dim=c(ny,ns))
+
