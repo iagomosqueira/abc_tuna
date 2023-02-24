@@ -59,3 +59,28 @@
     - 38 LLCPUE4_Q3
     - 39 LLCPUE4_Q4
     - 40    DNCPUE4
+
+
+# src
+  - init_pdyn.cpp: generate initial population-per-recruit for ABC simulator.
+  - msy_pdyn.cpp: generate eqm popn for MSY estimation IOTC ABC simulator.
+  - pdyn.cpp: dynamic non-eqm population dynamics for  ABC simulator.
+  - pdyn_lfcpue.cpp: generate predicted LF and CPUE
+
+# test
+  - test_mdarr.cpp
+  - test_mdclass.cpp
+
+# old
+  - mdclass.cpp
+  - abc_pdyn.cpp
+
+# include
+  - mdarrays.h
+  - mdarrclass.h
+
+# R
+  - abc.R
+  - init_pdyn.R
+  - test.R
+  - test_season.R
