@@ -236,3 +236,35 @@ H <- array(resp2$H,dim=c(ny,ns,nf))
 LF <- array(resp2$LF,dim=c(ny,nbins,ns,nf))
 I <- array(resp2$I,dim=c(ny,ns))
 
+# exploring "equivalence" between K-L and multinomial ESS
+
+nits <- 1000
+neff <- seq(50,200,by=10)
+KL <- array(dim=c(length(neff),nits))
+ptrue <- LF[1,,1,1]
+for(i in 1:length(neff)) {
+
+  nsim <- rmultinom(nits,neff[i],ptrue)
+  psim <- apply(nsim,2,function(x){x <- x/sum(x)})
+
+  for(n in 1:nits) {
+
+    xobs <- psim[,n]
+    xobs[xobs == 0] <- 1e-6
+    xtmp <- xobs*log(xobs/ptrue)
+    KL[i,n] <- sum(xtmp[!is.nan(xtmp)])
+
+  }
+}
+
+klsumm <- apply(KL,1,quantile,c(0.025,0.5,0.975))
+kmax <- max(klsumm)
+kmin <- 0
+plot(neff,klsumm[2,],ylim=c(kmin,kmax),type='l',xlab='ESS',ylab="K-L divergence")
+lines(neff,klsumm[1,],lty=2)
+lines(neff,klsumm[3,],lty=2)
+
+# save it
+
+save.image("init_pdyn.rda")
+
