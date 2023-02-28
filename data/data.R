@@ -25,12 +25,6 @@ dat <- SS_readdat('sa/abt.dat')
 
 # LOOKUP table: group LL & Other by area, keep PS, drop DN.
 
-# One fleet per season
-lookup <- data.table(
-  fleet=c(seq(1, 16), 19, seq(20, 23)),
-  unit=c(rep(seq(1, 4), 4), 5, rep(6, 4)))
-setkey(lookup, "fleet")
-
 # One fleet per area
 lookup <- data.table(
   fleet=c(seq(1, 16), 19, seq(20, 23)),
@@ -82,7 +76,19 @@ ggplot(lencomp[year > 2010], aes(x=length, y=n, group=season)) +
 
 # CPUE
 cpue <- data.table(dat$CPUE)
+# NO cpue in LL4 Q4 (39)
+cpue <- cpue[index < 39,]
+setnames(cpue, c("seas"), c("season"))
 
+lookup <- data.table(
+  index=seq(24, 38),
+  unit=rep(seq(1, 4), each=4)[-16])
+setkey(lookup, "index")
+
+cpue <- cpue[lookup, on="index"]
+cpue[,season:=season - 1.5]
+
+cpue <- cpue[, .(obs=mean(obs)), by=.(year, season, unit)]
 
 # - stock
 
