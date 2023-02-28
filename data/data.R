@@ -80,9 +80,6 @@ ggplot(lencomp[year > 2010], aes(x=length, y=n, group=season)) +
   geom_col() + facet_grid(year~unit, scales="free")
 
 
-save(lencomp, catches, file="fleet.RData")
-
-
 # CPUE
 cpue <- data.table(dat$CPUE)
 
@@ -103,5 +100,5 @@ m <- m(run)
 
 
 # SAVE
-save(catches, lencomp, cpue, caa, waa, mat, m,
-    file="data.RData", compress="xz")
+save(catches, lencomp, cpue, caa, waa, mat, m, file="data.RData",
+  compress="xz")
