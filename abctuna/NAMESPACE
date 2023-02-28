@@ -1,0 +1,4 @@
+useDynLib(abctuna, .registration=TRUE)
+importFrom("Rcpp", "evalCpp", "sourceCpp")
+import(FLCore)
+exportPattern("^[[:alpha:]]+")

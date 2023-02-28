@@ -7,6 +7,10 @@
 # Distributed under the terms of the EUPL-1.2
 
 
+
+
+
+
 # data
 
 #' @param laa Length at ageby sex
@@ -22,32 +26,12 @@
 #' @param pvars Proposal variances
 #' @param Fstatus F/FMSY prior
 
-
-library(Rcpp)
-library(FLCore)
-library(ggplotFL)
-source("utilities.R")
-
-sourceCpp("init_pdyn.cpp")
-sourceCpp("msy_pdyn.cpp")
-sourceCpp("pdyn.cpp")
-sourceCpp("pdyn_lfcpue.cpp")
-
-# NC by fleet [y, s, f]
-# 
-
-load('../data/data.RData')
-
 # --- simulator
 
 # - arguments
 #   - parameters: R0, dep, h
 #   - biology
 #   - fishery
-
-R0 <- 1e6
-dep <- 0.5
-h <- 0.75
 
 # sim {{{
 sim <- function(R0=1e6, dep=0.5, h=0.75) {
@@ -267,8 +251,7 @@ sim <- function(R0=1e6, dep=0.5, h=0.75) {
   fref <- 1
 
   resp2 <- pdynlfcpue(c(ny,ns,na,nl,nf),srec,R0,h,psi,epsr,spr0,M,
-    as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),
-    fref)
+    as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),fref)
 
   N <- array(resp2$N,dim=c(ny,na,ns,ng))
   S <- array(resp2$S,dim=c(ny,ns))
@@ -281,13 +264,9 @@ sim <- function(R0=1e6, dep=0.5, h=0.75) {
 }
 # }}}
 
-system.time(
-d <- sim(R0=1e6, dep=0.5, h=0.75)
-)
-
-# N [ny, na, ns, ng]
-
-naa <- FLQuant(aperm(d$N, c(2,1,4,3)), dimnames=list(age=seq(0,19),
-  year=2001:2010, unit=c("F", "M"), season=1:4))
-
-plot(naa) + ylim(c(0,NA))
+#' @examples
+#' system.time(
+#'   d <- sim(R0=1e6, dep=0.5, h=0.75)
+#' )
+#' naa <- FLQuant(aperm(d$N, c(2,1,4,3)), dimnames=list(age=seq(0,19),
+#'  year=2001:2010, unit=c("F", "M"), season=1:4))

@@ -33,8 +33,6 @@ sourceCpp("msy_pdyn.cpp")
 sourceCpp("pdyn.cpp")
 sourceCpp("pdyn_lfcpue.cpp")
 
-# NC by fleet [y, s, f]
-# 
 
 load('../data/data.RData')
 
@@ -267,8 +265,7 @@ sim <- function(R0=1e6, dep=0.5, h=0.75) {
   fref <- 1
 
   resp2 <- pdynlfcpue(c(ny,ns,na,nl,nf),srec,R0,h,psi,epsr,spr0,M,
-    as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),
-    fref)
+    as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),fref)
 
   N <- array(resp2$N,dim=c(ny,na,ns,ng))
   S <- array(resp2$S,dim=c(ny,ns))
