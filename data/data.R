@@ -23,15 +23,6 @@ dat <- SS_readdat('sa/abt.dat')
 
 # --- OUTPUT data matrices / arrays
 
-# LOOKUP table: group LL & Other by area, keep PS, drop DN.
-
-# One fleet per area
-lookup <- data.table(
-  fleet=c(seq(1, 16), 19, seq(20, 23)),
-  unit=c(rep(seq(1, 4), each=4), 5, rep(6, 4)))
-setkey(lookup, "fleet")
-
-
 # - EXTRACT catch per fleet, year and season
 
 catches <- data.table(dat$catch)[year >= 1954]
@@ -64,7 +55,13 @@ lencomp <- melt(lencomp, id=c("year", "season", "fleet", "Nsamp"),
   measure=seq(5, 59), variable.name = "length", value.name = "n")
 
 # FIX season
-lencomp[, season:=season - 1.5]
+lencomp[, season:=(season + 0.5) / 3]
+
+# LOOKUP table: group LL & Other by area, keep PS, drop DN.
+lookup <- data.table(
+  fleet=c(seq(1, 16), 19, seq(20, 23)),
+  unit=c(rep(seq(1, 4), each=4), 5, rep(6, 4)))
+setkey(lookup, "fleet")
 
 # A new fleet
 lencomp <- lencomp[lookup[fleet < 20,], on="fleet"]
@@ -86,9 +83,14 @@ lookup <- data.table(
 setkey(lookup, "index")
 
 cpue <- cpue[lookup, on="index"]
-cpue[,season:=season - 1.5]
+
+cpue[,season:=(season + 0.5) / 3]
 
 cpue <- cpue[, .(obs=mean(obs)), by=.(year, season, unit)]
+
+ggplot(cpue, aes(x=ISOdate(year, season * 3, 1), y=obs)) +
+  geom_line() +
+  facet_wrap(~unit, scales='free')
 
 # - stock
 
