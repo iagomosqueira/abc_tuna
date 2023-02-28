@@ -1,5 +1,5 @@
 # data.R - DESC
-# /home/mosquia/Active/Doing/ABC_tuna+iotc/abc_tuna/data/data.R
+# abc_tuna/data/data.R
 
 # Copyright (c) WUR, 2023.
 # Author: Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
@@ -8,6 +8,7 @@
 
 
 library(FLCore)
+library(ggplotFL)
 library(ss3om)
 library(data.table)
 
@@ -24,38 +25,67 @@ dat <- SS_readdat('sa/abt.dat')
 
 # LOOKUP table: group LL & Other by area, keep PS, drop DN.
 
+# One fleet per season
 lookup <- data.table(
   fleet=c(seq(1, 16), 19, seq(20, 23)),
   unit=c(rep(seq(1, 4), 4), 5, rep(6, 4)))
 setkey(lookup, "fleet")
+
+# One fleet per area
+lookup <- data.table(
+  fleet=c(seq(1, 16), 19, seq(20, 23)),
+  unit=c(rep(seq(1, 4), each=4), 5, rep(6, 4)))
+setkey(lookup, "fleet")
+
 
 # - EXTRACT catch per fleet, year and season
 
 catches <- data.table(dat$catch)[year >= 1954]
 setkey(catches, "fleet")
 
+# RECODE fleets
 ncatches <- catches[lookup, on="fleet"]
 setnames(ncatches, c('seas', 'catch'), c('season', 'data'))
 
-ncatches <- ncatches[, .(data=sum(data, na.rm=TRUE)), by=.(year, season, unit)]
+catches <- ncatches[, .(data=sum(data, na.rm=TRUE)), by=.(year, season, unit)]
 
-setorder(ncatches, year, season, unit)
+setorder(catches, year, season, unit)
 
-ggplot(ncatches[unit %in% seq(1:4)],
+ggplot(catches[unit %in% seq(1:4)],
   aes(x=ISOdate(year, season * 3, 1), y=data, group=unit)) +
-  geom_line() + facet_wrap(~unit)+ geom_point()
-
-ggplot(ncatches,
-  aes(x=ISOdate(year, season * 3, 1), y=data, group=unit)) +
-  geom_line() + facet_wrap(~unit, scales='free')+ geom_point()
+  geom_line() + facet_wrap(~unit)+ geom_point() +
+  ggtitle("LL fleets by area")
 
 
 # - EXTRACT length composition data
 
 lencomp <- data.table(dat$lencomp)
 
+# SELECT 'f' columns
+lencomp <- lencomp[, c(1,2,3,6,7:61)]
+setnames(lencomp, c("year", "season", "fleet", "Nsamp", seq(30, 138, by=2)))
+
+# RESHAPE to long
+lencomp <- melt(lencomp, id=c("year", "season", "fleet", "Nsamp"),
+  measure=seq(5, 59), variable.name = "length", value.name = "n")
+
+# FIX season
+lencomp[, season:=season - 1.5]
+
+# A new fleet
+lencomp <- lencomp[lookup[fleet < 20,], on="fleet"]
+
+#
+ggplot(lencomp[year > 2010], aes(x=length, y=n, group=season)) +
+  geom_col() + facet_grid(year~unit, scales="free")
+
+
+save(lencomp, catches, file="fleet.RData")
+
+
 # CPUE
 cpue <- data.table(dat$CPUE)
+
 
 # - stock
 
