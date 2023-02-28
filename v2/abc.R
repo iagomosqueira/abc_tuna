@@ -126,8 +126,8 @@ sim <- function(R0=1e6, dep=0.5, h=0.75) {
       dl <- dl / sum(dl)
       mlref <- 1 / (1 + 19 ^ (-(lref - ml50) / (ml95-ml50)))
       wlref <- alw * lref ^ blw
-      mata[a, s, g] <- sum(mlref  *dl)
-      wta[a, s, g] <- sum(wlref, dl)
+      mata[a, s, g] <- sum(mlref*dl)
+      wta[a, s, g] <- sum(wlref*dl)
 
         for(f in seq(nf)) {
           slref <- 1 / (1 + 19 ^ (-(lref - sl50[f]) / (sl95[f] - sl50[f])))
