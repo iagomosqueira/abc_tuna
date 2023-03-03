@@ -59,8 +59,8 @@ for(f in cpuef) {
 
 ldf <- subset(lencomp,year >= ymin)
 fref <- 19
-ggplot(subset(ldf,fleet==fref))+geom_point(aes(x=l,y=n))+facet_grid(season~year)
 ldf$l <- as.numeric(as.character(ldf$length))
+ggplot(subset(ldf,fleet==fref))+geom_point(aes(x=l,y=n))+facet_grid(season~year)
 
 lmin <- 30
 lmax <- 138
