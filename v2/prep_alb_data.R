@@ -58,17 +58,73 @@ for(f in cpuef) {
 ## LF
 
 ldf <- subset(lencomp,year >= ymin)
-fref <- 19
-ggplot(subset(ldf,fleet==fref))+geom_point(aes(x=l,y=n))+facet_grid(season~year)
 ldf$l <- as.numeric(as.character(ldf$length))
+fref <- 19
+ggplot(subset(ldf,fleet==fref))+geom_line(aes(x=l,y=n))+facet_grid(season~year)
 
 lmin <- 30
 lmax <- 138
 ldel <- 4 # 4cm length bins
+lorig <- as.numeric(unique(ldf$l))
 lbins <- seq(lmin,lmax,by=ldel)
+lagg <- as.numeric(lbins)
 nbins <- length(lbins)-1
 mulbins <- 0.5*(lbins[-1]+lbins[-(nbins+1)])
 LF <- array(dim=c(ny,nbins,ns,nf))
+
+for(y in 1:ny) {
+  for(f in 1:nf) {
+
+    if(f == 1) fref <- 1:4
+    if(f == 2) fref <- 5:8 
+    if(f == 3) fref <- 9:12 
+    if(f == 4) fref <- 13:16 
+    
+    if(f <= 4) {
+
+      zz <- subset(ldf,year == yrs[y] & fleet %in% fref)
+      for(ff in 1:4) {
+        
+        zzz <- subset(zz,fleet  == fref[ff])
+        if(dim(zzz)[1] > 0) {
+
+          nn <- zzz$n
+          names(nn) <- lorig
+          nx <- rep(0,nbins)
+          ndf <- data.frame(l=lorig,n=nn)
+          for(ll in 1:nbins) nx[ll] <- sum(subset(ndf,l >= lagg[ll] & l < lagg[ll+1])$n)
+          LF[y,,ff,f] <- nx
+
+        }
+      }
+    }
+
+    if(f == 6) {
+
+      fref <- 19
+      zz <- subset(ldf,year == yrs[y] & fleet == fref) 
+      for(s in 1:ns) {
+
+        zzz <- subset(zz,season == sx[s])
+        if(dim(zzz)[1] > 0) {
+
+          nn <- zzz$n
+          names(nn) <- lorig
+          nx <- rep(0,nbins)
+          ndf <- data.frame(l=lorig,n=nn)
+          for(ll in 1:nbins) nx[ll] <- sum(subset(ndf,l >= lagg[ll] & l < lagg[ll+1])$n) 
+          LF[y,,s,f] <- nx 
+
+        }
+      }
+    }
+  }
+}
+
+# year sums (probably best use of data)
+
+LFagg <- apply(LF,c(2,3,4),sum,na.rm=T)
+LFfits <- apply(LF,c(2,4),sum,na.rm=T)
 
 ## biology
 
