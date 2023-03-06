@@ -1,0 +1,22 @@
+1 fishing fleet: 1 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+2 fishing fleet: 2 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+3 fishing fleet: 3 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+4 fishing fleet: 4 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+5 fishing fleet: 5 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+6 fishing fleet: 6 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+7 fishing fleet: 7 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+8 fishing fleet: 8 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+9 fishing fleet: 9 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+10 fishing fleet: 10 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+11 fishing fleet: 11 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+12 fishing fleet: 12 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+13 fishing fleet: 13 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+14 fishing fleet: 14 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+15 fishing fleet: 15 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+16 fishing fleet: 16 surveytime read as: 1 normally is -1 for fishing fleet; can override for indiv. obs. using 1000+month
+17 NOTE:  Max data length bin: 138  < max pop len bins: 140; so will accumulate larger pop len bins
+18 setting in starter does not request all priors, and 1 parameters have priors and are not estimated, so their prior not included in obj_fun.
+19 Forecast F capped by max possible F from control file: 4
+20 Forecast F capped by max possible F from control file: 4
+21 Reminder: Number of lamdas !=0.0 and !=1.0:  17
+N warnings: 21
