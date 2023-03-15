@@ -212,6 +212,15 @@ RcppExport SEXP initpdyn(SEXP dm_,SEXP srec_,SEXP psi_,SEXP M_,SEXP mata_,SEXP w
 
   double rho = sprf/spr0;
   List res = Rcpp::List::create(Named("rho")=rho,Named("C")=cvec,Named("N")=nvec,Named("spr0")=spr0);
+
+  // delete arrays
+
+  mata.del();
+  wta.del();
+  hinit.del();
+  C.del();
+  sela.del();
+  N.del();
   
   return Rcpp::wrap(res);
 

@@ -8,7 +8,7 @@ library(FLCore)
 library(ggplot2)
 library(ggplotFL)
 
-load("../data/data.RData")
+load("../abc_tuna/data/data.RData")
 
 # years of analyses
 
@@ -58,9 +58,9 @@ for(f in cpuef) {
 ## LF
 
 ldf <- subset(lencomp,year >= ymin)
-fref <- 19
 ldf$l <- as.numeric(as.character(ldf$length))
-ggplot(subset(ldf,fleet==fref))+geom_point(aes(x=l,y=n))+facet_grid(season~year)
+fref <- 19
+ggplot(subset(ldf,fleet==fref))+geom_line(aes(x=l,y=n))+facet_grid(season~year)
 
 lmin <- 30
 lmax <- 138
@@ -126,11 +126,45 @@ for(y in 1:ny) {
 LFagg <- apply(LF,c(2,3,4),sum,na.rm=T)
 LFfits <- apply(LF,c(2,4),sum,na.rm=T)
 
+par(mfrow=c(3,2))
+apply(LFfits,2,function(x,mulbins){plot(mulbins,x,type='l')},mulbins)
+
+# exploring "equivalence" between K-L and multinomial ESS
+
+nits <- 1000
+neff <- seq(10,200,by=10)
+KL <- array(dim=c(length(neff),nits))
+ptrue <- apply(LFfits,1,sum)
+ptrue <- ptrue/sum(ptrue)
+
+for(i in 1:length(neff)) {
+
+  nsim <- rmultinom(nits,neff[i],ptrue)
+  psim <- apply(nsim,2,function(x){x <- x/sum(x)})
+
+  for(n in 1:nits) {
+
+    xobs <- psim[,n]
+    xobs[xobs == 0] <- 1e-6
+    xtmp <- xobs*log(xobs/ptrue)
+    KL[i,n] <- sum(xtmp[!is.nan(xtmp)])
+
+  }
+}
+
+klsumm <- apply(KL,1,quantile,c(0.025,0.5,0.975))
+kmax <- max(klsumm)
+kmin <- 0
+plot(neff,klsumm[2,],ylim=c(kmin,kmax),type='l',xlab='ESS',ylab="K-L divergence")
+lines(neff,klsumm[1,],lty=2)
+lines(neff,klsumm[3,],lty=2)
+
 ## biology
 
 ages <- as.numeric(dimnames(waa)$age)
 na <- length(ages)
 M <- 0.075 # per quarter i.e. seasonal
+sigmar <- 0.3 # from assessment
 
 mata <- wta <- array(dim=c(na,ns,2))
 for(s in 1:ns) {

@@ -12,6 +12,7 @@ public:
   double **t; 
   double **arr2(int,int);
   double& operator()(int,int);
+  void del();
 
 };
 
@@ -29,6 +30,12 @@ double& arr2d::operator()(int i1,int i2)
   return(t[i1][i2]);
 }
 
+void arr2d::del()
+{
+  delete[] t;
+
+}
+
 class arr3d
 {
 
@@ -37,6 +44,7 @@ public:
   double ***t; 
   double ***arr3(int,int,int);
   double& operator()(int,int,int);
+  void del(); 
 
 };
 
@@ -59,6 +67,12 @@ double& arr3d::operator()(int i1,int i2,int i3)
   return(t[i1][i2][i3]);
 }
 
+void arr3d::del()
+{
+  delete[] t;
+
+}
+
 class arr4d
 {
 
@@ -67,6 +81,7 @@ public:
   double ****t; 
   double ****arr4(int,int,int,int);
   double& operator()(int,int,int,int);
+  void del(); 
 
 };
 
@@ -91,4 +106,10 @@ double**** arr4d::arr4(int d1,int d2,int d3,int d4)
 double& arr4d::operator()(int i1,int i2,int i3,int i4) 
 {
   return(t[i1][i2][i3][i4]);
+}
+
+void arr4d::del()
+{
+  delete[] t;
+
 }
