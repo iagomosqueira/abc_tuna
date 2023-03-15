@@ -30,24 +30,53 @@ source("utilities.R")
 
 sourceCpp("init_pdyn.cpp")
 sourceCpp("msy_pdyn.cpp")
-sourceCpp("pdyn.cpp")
+#sourceCpp("pdyn.cpp")
 sourceCpp("pdyn_lfcpue.cpp")
 
 # NC by fleet [y, s, f]
 # 
 
-load('../data/data.RData')
+#load('../data/data.RData')
+load("alb_abcdata.rda")
 
 # --- simulator
 
 # - arguments
-#   - parameters: R0, dep, h
+#   - parameters: R0, dep, h, epsr, selpars
 #   - biology
 #   - fishery
 
-R0 <- 1e6
+R0 <- 15e6
 dep <- 0.5
 h <- 0.75
+
+# number of fisheries
+
+nf <- dim(C)[3]
+
+# number of distinct selectivity groups
+
+nselg <- 5
+
+# selectivity for each fishery
+
+selidx <- c(1,2,3,4,5,5)
+
+# set up selectivity parameters (all double normal)
+
+smax <- c(100,110,85,85,110)
+sL <- c(40,35,15,15,10)
+sR <- c(30,30,30,30,30)
+selpars <- cbind(smax,sL,sR)
+sellen <- matrix(nrow=nbins,ncol=nselg)
+for(ff in 1:nselg) {
+  for(l in 1:nbins) {
+
+    lref <- mulbins[l]
+    sellen[,ff] <- ifelse(lref < smax[ff],2^{-((lref-smax[ff])/sL[ff])^2},2^{-((lref-smax[ff])/sR[ff])^2})
+
+  }
+}
 
 # sim {{{
 sim <- function(R0=1e6, dep=0.5, h=0.75) {
