@@ -22,10 +22,10 @@
 #' @param pvars Proposal variances
 #' @param Fstatus F/FMSY prior
 
-
 library(Rcpp)
 library(FLCore)
 library(ggplotFL)
+library(parallel)
 source("utilities.R")
 
 sourceCpp("init_pdyn.cpp")
@@ -39,6 +39,27 @@ sourceCpp("pdyn_lfcpue.cpp")
 #load('../data/data.RData')
 load("alb_abcdata.rda")
 
+# fnscale 
+fnscale <- 1
+
+# years and values for stock status priors
+
+#yfmsy <- c(1,2,ny-1,ny) # first two, last two 
+#mufmsy <- c(0.6,0.55,0.57,0.6)
+#sdfmsy <- c(0.125,0.125,0.175,0.18)
+ybmsy <- c(ny-1,ny)
+mubmsy <- c(2.25,2)
+sdbmsy <- c(0.35,0.35)
+ydep <- 1
+mudep <- 0.5
+sddep <- 0.1
+
+# recale weight to tonnes
+
+wta <- wta[]*1e-3
+ 
+pobs <- apply(LFfits,2,function(x){x <- x/sum(x)}) # what we will fit to
+
 # --- simulator
 
 # - arguments
@@ -46,9 +67,9 @@ load("alb_abcdata.rda")
 #   - biology
 #   - fishery
 
-R0 <- 15e6
+R0 <- 17e6
 dep <- 0.5
-h <- 0.75
+h <- 0.8
 
 # number of fisheries
 
@@ -62,261 +83,112 @@ nselg <- 5
 
 selidx <- c(1,2,3,4,5,5)
 
+# fisheries with LF data
+
+flf <- c(1,2,3,4,6)
+nflf <- length(flf)
+pobs <- apply(LFfits,2,function(x){x <- x/sum(x)}) # what we will fit to
+pobs <- pobs[,flf]
+
+# catch distro targets
+
+pctarg <- C[1,,] / sum(C[1,,])
+
 # set up selectivity parameters (all double normal)
 
-smax <- c(100,110,85,85,110)
-sL <- c(40,35,15,15,10)
-sR <- c(30,30,30,30,30)
+smax <- c(120,125,85,85,115)
+sL <- c(20,20,7,7,10)
+sR <- c(35,30,25,15,30)
 selpars <- cbind(smax,sL,sR)
-sellen <- matrix(nrow=nbins,ncol=nselg)
-for(ff in 1:nselg) {
-  for(l in 1:nbins) {
 
-    lref <- mulbins[l]
-    sellen[,ff] <- ifelse(lref < smax[ff],2^{-((lref-smax[ff])/sL[ff])^2},2^{-((lref-smax[ff])/sR[ff])^2})
+# recruitment variations (ny-1)
 
-  }
-}
+epsr <- rep(0,ny-1)
 
-# sim {{{
-sim <- function(R0=1e6, dep=0.5, h=0.75) {
+# recruitment season
 
-  # DIMENSIONS
-  # seasons
-  ns <- 4
-  # ages
-  na <- 20
-  # TODO: First age is 0 or 1? 
-  ages <- seq(1, na)
-  # fisheries
-  nf <- 2
-  # sexes
-  ng <- 2
-  # length bins
-  nl <- 20
+srec <- 4
 
-  # VARIABLES
-  # sex ratio at birth
-  psi <- 0.5
-  # recruitment season
-  srec <- 2
+# sex ratio at birth (fiddy:fiddy)
 
-  # growth-by-sex
-  k <- c(0.2, 0.2)
-  linf <- c(100, 100)
-  l0 <- c(10, 10)
-  sdla <- c(0.1, 0.1)
+psi <- 0.5
 
-  # maturity-at-length
-  ml50 <- 60
-  ml95 <- 80
-  
-  # selectivity-at-length
-  sl50 <- c(45, 45)
-  sl95 <- c(65, 65)
-  
-  # natural mortality (by season)
-  # TODO: Set as vector at age?
-  M <- 0.1
-  
-  # weight-at-length
-  alw <- 2e-6
-  blw <- 3
+# dimensions
 
-  # INITIALIZE output objects
-  # C
-  C <- array(10000, dim=c(ns, nf))
+dms <- c(na,ns,nf,nselg)
 
-  # BIOLOGY
+## MCMC algorithm 
 
-  # mean length-at-age by season/sex
-  
-  mula <- array(dim=c(na, ns, ng))
+# Gibbs sampling parameter groupings
+# 1. B0 and dep
+# 2. recruitment deviates
+# 3. selectivity 
 
-  for(g in seq(ng)) {
-    for(s in seq(ns)) {
-    a <- ages + (s - 1) * 0.25
-    mula[, s, g] <- l0[g] + (linf[g] - l0[g]) * (1 - exp(-k[g] * a))
-    }
-  }
+npar <- 2+ny-1+3*nselg
+ngibbs <- 3
+paridx <- list()
+paridx[[1]] <- 1:2
+paridx[[2]] <- 3:(ny+1)
+paridx[[3]] <- (ny+2):npar
+lidx <- unlist(lapply(paridx,length))
 
-  # maturity-at-age, weight-at-age and selectivity-at-age
-  mata <- wta <- array(dim=c(na, ns, 2))
-  sela <- array(dim=c(na, ns, 2, nf))
+# SD in CPUE index
 
-  for(g in seq(ng)) {
-    for(s in seq(ns)) {
-      for(a in ages) {
+fcpue <- 1
+scpue <- 1:4
+sd.cpue <- rep(NA,length(scpue))
+par(mfrow=c(2,2))
+for(s in scpue) {
 
-      lmin <- max(0, mula[a, s, g] * (1 - sdla[g] * 1.96))
-      lmax <- mula[a, s, g] * (1 + sdla[g] * 1.96)
-      lref <- seq(lmin, lmax, length=nl)
-      dl <- dlnorm(lref, log(mula[a,s,g]), sdla[g])
-      dl <- dl / sum(dl)
-      mlref <- 1 / (1 + 19 ^ (-(lref - ml50) / (ml95-ml50)))
-      wlref <- alw * lref ^ blw
-      mata[a, s, g] <- sum(mlref*dl)
-      wta[a, s, g] <- sum(wlref*dl)
-
-        for(f in seq(nf)) {
-          slref <- 1 / (1 + 19 ^ (-(lref - sl50[f]) / (sl95[f] - sl50[f])))
-          sela[a, s, g, f] <- sum(slref * dl)
-        }
-      }
-    }
-  }
-  
-  # SPR ratio at exploited eqm given steepness and depletion
-  # (based on derivation: dep = (4*h*rho+h-1)/(5*h-1))
-  rhotarg <- (dep * (5 * h - 1) + 1 - h)/(4 * h)
-
-  # catch fraction by season 
-  pctarg <- C / sum(C)
-
-  # Estimate initial Fs
-  hinit <- array(0.025, dim=c(ns, nf))
-  res <- initpdyn(c(ns, na, nf), srec, psi, M, as.vector(mata),
-    as.vector(wta), as.vector(sela), as.vector(hinit))
-
-  # target vector (rho+pc)
-  targv <- logit(c(rhotarg,pctarg))
-
-  # wrapper objective function to solve (minimise)
-
-  fnscale <- 1 # scalar to give objective function some bite
-
-  objfn.init <- function(theta) {
-
-    hxinit <- 1 / (1 + exp(-theta))
-    resx <- initpdyn(c(ns, na, nf), srec, psi, M, as.vector(mata),
-      as.vector(wta), as.vector(sela), hxinit) 
-
-    px <- resx$C / sum(resx$C)
-    tmpv <- c(resx$rho, as.vector(px))
-    objv <- logit(tmpv)
-
-    return(fnscale * (sum((objv - targv) ^ 2)))
-
-  }
-
-  theta <- logit(as.vector(hinit))
-
-  system.time(zz <- optim(theta, objfn.init, method=("L-BFGS-B"),
-    control=list(trace=0)))
-
-  hinit <- array(ilogit(zz$par), dim=c(ns, nf))
-  resinit <- initpdyn(c(ns, na, nf), srec, psi, M, as.vector(mata),
-    as.vector(wta), as.vector(sela), as.vector(hinit)) 
-
-  # MSY estimation
-  res <- msypdyn(c(ns, na, nf), srec, R0, h, psi, M,
-    as.vector(mata), as.vector(wta), as.vector(sela), hinit)
-
-  # relative H-split for MSY calcs
-  ph <- as.vector(hinit[] / sum(hinit))
-
-  # MSY wrapper
-  msyfn <- function(H) {
-
-    hx <- H * ph
-    resx <- msypdyn(c(ns,na,nf),srec,R0,h,psi,M,as.vector(mata),
-      as.vector(wta),as.vector(sela),hx)
-    
-    return(sum(resx$C))
-  }
-
-  msy <- optimise(msyfn, interval=c(0, 0.5), maximum=TRUE)
-
-  Hmsy <- msy$maximum
-  Cmsy <- msy$objective
-  resmsy <- msypdyn(c(ns,na,nf), srec, R0, h, psi, M, as.vector(mata),
-    as.vector(wta), as.vector(sela), Hmsy * ph)
-  
-  Bmsy <- resmsy$Bmsy
-  spr0 <- resinit$spr0
-  B0 <- R0*spr0
-  alp <- 4*h/(spr0*(1-h))
-  bet <- (5*h-1)/(B0*(1-h))
-
-  Bratio <- Bmsy/B0
-  Rratio <- resmsy$Rmsy/R0
-
-  if(!all.equal(Rratio, (4*h*Bratio)/(h*(5*Bratio-1)+1-Bratio)))
-    warning("B-H invariant check - should be same as Rratio")
-
-  # set up initial numbers-at-age for input to population dynamics
-
-  Rinit <- R0*(4*h*dep)/(h*(5*dep-1)+1-dep)
-  Ninit <- array(resinit$N,dim=c(na,ns,2))
-  Ninit[] <- Ninit[]*Rinit
-  nvec <- as.vector(Ninit)
-
-  # expected catch @ hinit
-  zinit <- msypdyn(c(ns,na,nf),srec,R0,h,psi,M,as.vector(mata),
-    as.vector(wta),as.vector(sela),as.vector(hinit))
-  Cinit <- array(zinit$C,dim=c(ns,nf))
-
-  # main population stuff
-
-  ny <- 10
-  epsr <- rep(0,ny-1)
-  Cb <- array(dim=c(ny,ns,nf))
-  for(y in 1:ny)
-    Cb[y,,] <- Cinit
-  cvec <- as.vector(Cb)
-
-  resp <- pdyn(c(ny,ns,na,nf),srec,R0,h,psi,epsr,spr0,M,as.vector(mata),
-    as.vector(wta),as.vector(sela),nvec,cvec)
-
-  N <- array(resp$N,dim=c(ny,na,ns,2))
-  S <- array(resp$S,dim=c(ny,ns))
-  H <- array(resp$H,dim=c(ny,ns,nf))
-
-  # generating predicted LF and CPUE #
-  # p(l | a, s, g)
-
-  lbins <- seq(0,120,by=6)
-  nbins <- length(lbins)-1
-  mulbins <- 0.5*(lbins[-1]+lbins[-length(lbins)])
-
-  pla <- array(dim=c(nbins,na,ns,2))
-
-  for(g in 1:2) {
-    for(s in 1:ns) {
-      for(a in 1:na) {
-        dx <- dnorm(log(mulbins),log(mula[a,s,g]),sdla[g],FALSE)
-        dx <- dx/sum(dx)
-        pla[,a,s,g] <- dx 
-      }
-    }
-  }
-
-  # fishery for CPUE generation
-
-  fref <- 1
-
-  resp2 <- pdynlfcpue(c(ny,ns,na,nl,nf),srec,R0,h,psi,epsr,spr0,M,
-    as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),
-    fref)
-
-  N <- array(resp2$N,dim=c(ny,na,ns,ng))
-  S <- array(resp2$S,dim=c(ny,ns))
-  H <- array(resp2$H,dim=c(ny,ns,nf))
-  LF <- array(resp2$LF,dim=c(ny,nbins,ns,nf))
-  I <- array(resp2$I,dim=c(ny,ns))
-
-  return(list(N=N, S=S, H=H, LF=LF, I=I))
+  idf <- data.frame(t=yrs,y=log(I[,s,fcpue]))
+  ires <- loess(y~t,idf)
+  plot(yrs,ires$fitted,type='l')
+  points(yrs,log(I[,s,fcpue]))
+  sd.cpue[s] <- sd(residuals(ires))
 
 }
-# }}}
 
-system.time(
-d <- sim(R0=1e6, dep=0.5, h=0.75)
-)
+sdcpue <- mean(sd.cpue)
 
-# N [ny, na, ns, ng]
+# sigmaR
 
-naa <- FLQuant(aperm(d$N, c(2,1,4,3)), dimnames=list(age=seq(0,19),
-  year=2001:2010, unit=c("F", "M"), season=1:4))
+sigmar <- 0.3 # from assessment
 
-plot(naa) + ylim(c(0,NA))
+# KLmax
+
+KLmax <- 0.8 # consistent with minimum Neff = 20 multinomial
+
+# seasonal q for CPUE (T or F)
+
+seasonq <- FALSE
+
+# burn-in and thinning factor
+ 
+burn <- 50
+thin <- 1
+
+###################
+# run the sampler #
+###################
+
+# set up initial guess parameter vector
+
+parvecold <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
+
+# RW variance by Gibbs grouping
+
+rwsd <- rep(0,npar)
+rwsd[paridx[[1]]] <- 0.11
+rwsd[paridx[[2]]] <- 0.11
+rwsd[paridx[[3]]] <- 0.025
+
+nits <- 1000 # total number of retained samples
+system.time(zzz <- mcmc.abc(nits))
+zzz$acp/nits
+boxplot(zzz$pars,outline=F,col='magenta')
+
+# parallelised efficient version
+
+
+
+
