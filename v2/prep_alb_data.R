@@ -8,7 +8,7 @@ library(FLCore)
 library(ggplot2)
 library(ggplotFL)
 
-load("../abc_tuna/data/data.RData")
+load("../data/data.RData")
 
 # years of analyses
 

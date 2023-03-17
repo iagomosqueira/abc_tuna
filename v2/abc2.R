@@ -162,25 +162,21 @@ KLmax <- 0.8 # consistent with minimum Neff = 20 multinomial
 
 seasonq <- FALSE
 
-# burn-in and thinning factor
- 
-burn <- 50
-thin <- 10
-
 ###################
 # run the sampler #
 ###################
 
 # set up initial guess parameter vector
 
-parvecold <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
+parinit <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
+parvecold <- parinit
 
 # RW variance by Gibbs grouping
 
 rwsd <- rep(0,npar)
 rwsd[paridx[[1]]] <- c(0.15,0) 
-rwsd[paridx[[2]]] <- 0.15
-rwsd[paridx[[3]]] <- 0.035
+rwsd[paridx[[2]]] <- 0.08
+rwsd[paridx[[3]]] <- 0.025
 
 nits <- 10 # total number of retained samples
 system.time(zzz <- rmcmc.abc(nits))
@@ -189,15 +185,21 @@ boxplot(zzz$pars,outline=F,col='magenta')
 
 # parallelised efficient version
 
-parvecold <- zzz$pars[nits,]
-nits <- 100
+parinit <- zzz$pars[dim(zzz$pars)[1],]
+# burn-in and thinning factor
+burn <- 10
+thin <- 10
+# overall number of retained iterations
+nits <- 500
 ncore <- 10
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),rmcmc.abc,mc.cores=ncore))
 
-mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/nits
+mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/(nits*thin)
 mcacp
 mcpars <- mczzz[[1]]$pars
 for(i in 2:ncore) mcpars <- rbind(mcpars,mczzz[[i]]$pars)
 boxplot(mcpars,outline=F,col='magenta') 
+
+mcvars <- get.mcmc.vars(mcpars)
 
