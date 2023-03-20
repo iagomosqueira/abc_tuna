@@ -409,12 +409,7 @@ rmcmc.abc <- function(nits) {
 
   # get initial guess discrepancy
 
-  R0x <- exp(parinit[1])
-  depx <- ilogit(parinit[2])
-  epsrx <- parinit[3:(ny+1)]
-  selvx <- exp(parinit[(ny+2):npar])
-  selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
-  xx <- rsim(R0x,depx,h,M,selparsx,epsrx,dms,pctarg,selidx) 
+  xx <- rsim(R0,dep,h,M,selpars,epsr,dms,pctarg,selidx) 
 
   # LF discrepancy
 
@@ -470,7 +465,7 @@ rmcmc.abc <- function(nits) {
 
   # parameter priors
 
-  pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
+  pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
 
   # starting discrepancy
 
@@ -577,9 +572,6 @@ rmcmc.abc <- function(nits) {
   
     if(n > burn & (n-burn) %% thin == 0) theta.mcmc[(n-burn)/thin,] <- parvecold
 
-
-    #if(n %% 100 == 0) cat("Iteration",n,"of",burn+nits*thin,"\n")
- 
   }
 
   return(list(pars=theta.mcmc,acp=acp))
@@ -594,12 +586,7 @@ mcmc.abc <- function(nits) {
 
   # get initial guess discrepancy
 
-  R0x <- exp(parinit[1])
-  depx <- ilogit(parinit[2])
-  epsrx <- parinit[3:(ny+1)]
-  selvx <- exp(parinit[(ny+2):npar])
-  selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
-  xx <- sim(R0x,depx,h,M,selparsx,epsrx,dms,pctarg,selidx) 
+  xx <- sim(R0,dep,h,M,selpars,epsr,dms,pctarg,selidx) 
 
   # LF discrepancy
 
@@ -656,7 +643,7 @@ mcmc.abc <- function(nits) {
 
   # parameter priors
 
-  pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
+  pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
 
   # starting discrepancy
 
@@ -731,7 +718,7 @@ mcmc.abc <- function(nits) {
 
       # parameter priors
 
-      pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
+      pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
 
       ## ABC accept/reject:
       # 1. KL(LF data) < KL_max or reject immediately
@@ -999,7 +986,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
   if(type == 'dep') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
-    for(nn in 1:nits) vv[nn,] <- varlist[[nn]]$dep
+    for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dep
     vmin <- 0
     vmax <- 1
     vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
@@ -1012,7 +999,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
   if(type == 'bmsy') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
-    for(nn in 1:nits) vv[nn,] <- varlist[[nn]]$dbmsy
+    for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dbmsy
     vmin <- 0
     vmax <- max(vv)
     vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
@@ -1025,7 +1012,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
   if(type == 'rec') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
-    for(nn in 1:nits) vv[nn,] <- varlist[[nn]]$Rtot
+    for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$Rtot
     vmin <- 0
     vmax <- max(vv)
     vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
@@ -1038,7 +1025,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
   if(type == 'cpue') {
 
     vv <- array(dim=c(nnits,ny,ns))
-    for(nn in 1:nits) {
+    for(nn in 1:nnits) {
       
       tmpv <- varlist[[nn]]$Ihat
       iobs <- I[,,fcpue]
@@ -1046,13 +1033,13 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 
         resq <- log(iobs/tmpv)
         lnq <- apply(resq,2,mean)
-        vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))
+        vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue)
 
       } else {
 
         resq <- log(iobs/tmpv)
         lnq <- mean(resq)
-        vv[nn,,] <- tmpv*exp(lnq)  
+        vv[nn,,] <- tmpv*exp(lnq)*rlnorm(ny*ns,0,sdcpue)  
 
       }
     }   
