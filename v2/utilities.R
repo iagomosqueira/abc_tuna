@@ -497,8 +497,8 @@ rmcmc.abc <- function(nits) {
 
         resq <- log(I[,,fcpue]/xx$I)
         lnq <- apply(resq,2,mean)
-        resq <- resq-lnq
-
+        resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+ 
       } else {
 
         resq <- log(I[,,fcpue]/xx$I)
@@ -1072,4 +1072,38 @@ plot.mcmc.vars <- function(varlist,type='dep') {
   }
 
 }
+# }}}
+
+# {{{ plot.mcmc.sel 
+plot.mcmc.sel <- function(mcpars) {
+
+  nnits <- dim(mcpars)[1]
+  selparsx <- exp(mcpars[,paridx[[3]]])
+  msel <- array(dim=c(nnits,nbins,nselg))
+
+  for(nn in 1:nnits) {
+    for(f in 1:nselg) {
+      
+      sx50 <- selparsx[nn,1+(f-1)]
+      sxL <- selparsx[nn,nselg+f]
+      sxR <- selparsx[nn,2*nselg+f]
+
+      for(l in 1:nbins) {
+  
+        lref <- mulbins[l]
+        msel[nn,l,f] <- ifelse(lref<sx50,2^{-(lref-sx50)^2/(sxL^2)},2^{-(lref-sx50)^2/(sxR^2)})
+        
+      }
+    }
+  }
+
+  vq <- apply(msel,c(2,3),quantile,c(0.025,0.5,0.975))
+  vdf <- expand.grid(length=mulbins,fishery=1:nselg,med=NA,lq=NA,uq=NA) 
+  vdf$med <- as.vector(vq[2,,])
+  vdf$lq <- as.vector(vq[1,,])
+  vdf$uq <- as.vector(vq[3,,]) 
+  ggplot(vdf)+geom_line(aes(x=length,y=med),colour='blue')+geom_line(aes(x=length,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=length,y=uq),colour='blue',linetype='dashed')+facet_wrap(~fishery)+ylab("Size selectivity") 
+
+}
+
 # }}}

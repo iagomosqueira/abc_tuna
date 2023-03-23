@@ -67,7 +67,7 @@ pobs <- apply(LFfits,2,function(x){x <- x/sum(x)}) # what we will fit to
 #   - biology
 #   - fishery
 
-R0 <- 17e6
+R0 <- 14e6
 dep <- 0.5
 h <- 0.8
 
@@ -160,7 +160,8 @@ KLmax <- 0.8 # consistent with minimum Neff = 20 multinomial
 
 # seasonal q for CPUE (T or F)
 
-seasonq <- FALSE
+#seasonq <- FALSE
+seasonq <- TRUE
 
 # burn-in and thinning factor
  
@@ -179,7 +180,7 @@ parvecold <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
 
 rwsd <- rep(0,npar)
 rwsd <- rep(0,npar)
-rwsd[paridx[[1]]] <- c(0.15,0) 
+rwsd[paridx[[1]]] <- c(0.1,0) 
 rwsd[paridx[[2]]] <- 0.08
 rwsd[paridx[[3]]] <- 0.025
 
@@ -193,7 +194,7 @@ boxplot(zzz$pars,outline=F,col='magenta')
 parvecold <- zzz$pars[nits1,]
 nits <- 500
 ncore <- 10
-thin <- 10
+thin <- 100
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),rmcmc.abc,mc.cores=ncore))
 
@@ -210,6 +211,7 @@ plot.mcmc.vars(mcvars,'bmsy')
 plot.mcmc.vars(mcvars,'rec')
 plot.mcmc.vars(mcvars,'cpue')
 plot.mcmc.vars(mcvars,'lf')
+plot.mcmc.sel(mcpars)
 
-save.image("alb_abc_run1.rda")
+save.image("alb_abc_run2.rda")
 
