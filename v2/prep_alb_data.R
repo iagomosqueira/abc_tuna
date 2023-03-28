@@ -8,7 +8,7 @@ library(FLCore)
 library(ggplot2)
 library(ggplotFL)
 
-load("../data/data.RData")
+load("../abc_tuna/data/data.RData")
 
 # years of analyses
 
@@ -59,7 +59,7 @@ for(f in cpuef) {
 
 ldf <- subset(lencomp,year >= ymin)
 ldf$l <- as.numeric(as.character(ldf$length))
-fref <- 19
+fref <- 4
 ggplot(subset(ldf,fleet==fref))+geom_line(aes(x=l,y=n))+facet_grid(season~year)
 
 lmin <- 30
