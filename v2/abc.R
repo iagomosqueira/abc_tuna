@@ -183,19 +183,34 @@ rwsd[paridx[[2]]] <- 0.08
 rwsd[paridx[[3]]] <- 0.025
 
 nits1 <- 10 # total number of retained samples
-system.time(zzz <- mcmc.abc(nits))
+system.time(zzz <- mcmc.abc(nits1))
 zzz$acp/nits1
 boxplot(zzz$pars,outline=F,col='magenta')
 
 # parallelised efficient version
 
 parvecold <- zzz$pars[nits1,]
-nits <- 500
+nits <- 100
 ncore <- 10
-thin <- 1
+thin <- 10
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc.abc,mc.cores=ncore))
 
+mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/(nits*thin)
+mcacp
+mcpars <- mczzz[[1]]$pars
+for(i in 2:ncore) mcpars <- rbind(mcpars,mczzz[[i]]$pars)
+boxplot(mcpars,outline=F,col='magenta') 
 
+mcvars <- get.mcmc.vars(mcpars)
+
+plot.mcmc.vars(mcvars,'dep')
+plot.mcmc.vars(mcvars,'bmsy')
+plot.mcmc.vars(mcvars,'rec')
+plot.mcmc.vars(mcvars,'cpue')
+plot.mcmc.vars(mcvars,'lf')
+plot.mcmc.sel(mcpars)
+
+save.image("alb_abc_run1.rda")
 
 
