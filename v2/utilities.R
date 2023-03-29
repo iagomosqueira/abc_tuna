@@ -600,7 +600,7 @@ mcmc.abc <- function(nits) {
 
     resq <- log(I[,,fcpue]/xx$I)
     lnq <- apply(resq,2,mean)
-    resq <- resq-lnq
+    resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
 
   } else {
 
@@ -638,7 +638,6 @@ mcmc.abc <- function(nits) {
   } else {
 
     sprior <- sprior+sum(dnorm(dSSB,mudep,sddep,TRUE))
-
   }  
 
   # parameter priors
@@ -651,11 +650,11 @@ mcmc.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
-    for(g in 1:ngibbs) {
+    for(gg in 1:ngibbs) {
 
-      epsrw <- rnorm(lidx[g],0,rwsd[paridx[[g]]])
+      epsrw <- rnorm(lidx[gg],0,rwsd[paridx[[gg]]])
       parvecnew <- parvecold
-      parvecnew[paridx[[g]]] <- parvecnew[paridx[[g]]]+epsrw
+      parvecnew[paridx[[gg]]] <- parvecnew[paridx[[gg]]]+epsrw
       R0x <- exp(parvecnew[1])
       depx <- ilogit(parvecnew[2])
       epsrx <- parvecnew[3:(ny+1)]
@@ -675,8 +674,8 @@ mcmc.abc <- function(nits) {
 
         resq <- log(I[,,fcpue]/xx$I)
         lnq <- apply(resq,2,mean)
-        resq <- resq-lnq
-
+        resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+ 
       } else {
 
         resq <- log(I[,,fcpue]/xx$I)
@@ -718,7 +717,7 @@ mcmc.abc <- function(nits) {
 
       # parameter priors
 
-      pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
+      pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
 
       ## ABC accept/reject:
       # 1. KL(LF data) < KL_max or reject immediately
@@ -741,7 +740,7 @@ mcmc.abc <- function(nits) {
 
         parvecold <- parvecnew
         dtotold <- dtotnew
-        if(n > burn) acp[g] <- acp[g]+1
+        if(n > burn) acp[gg] <- acp[gg]+1
 
       }
     }
@@ -750,8 +749,6 @@ mcmc.abc <- function(nits) {
   
     if(n > burn & (n-burn) %% thin == 0) theta.mcmc[(n-burn)/thin,] <- parvecold
 
-    if(n %% 100 == 0) cat("Iteration",n,"of",burn+nits*thin,"\n")
- 
   }
 
   return(list(pars=theta.mcmc,acp=acp))
@@ -959,7 +956,7 @@ get.mcmc.vars <- function(parsmat) {
     epsrx <- mcpars[nn,3:(ny+1)]
     selvx <- exp(mcpars[nn,(ny+2):npar])
     selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
-    xx <- rsim(R0x,depx,h,M,selparsx,epsrx,dms,pctarg,selidx)
+    xx <- sim(R0x,depx,h,M,selparsx,epsrx,dms,pctarg,selidx)
 
     varlist[[nn]] <- list()
     varlist[[nn]][['Rtot']] <- apply(xx$N[,1,srec,],1,sum)

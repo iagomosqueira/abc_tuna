@@ -67,7 +67,7 @@ pobs <- apply(LFfits,2,function(x){x <- x/sum(x)}) # what we will fit to
 #   - biology
 #   - fishery
 
-R0 <- 17e6
+R0 <- 14e6
 dep <- 0.5
 h <- 0.8
 
@@ -164,7 +164,7 @@ seasonq <- FALSE
 
 # burn-in and thinning factor
  
-burn <- 50
+burn <- 10
 thin <- 1
 
 ###################
@@ -178,16 +178,23 @@ parvecold <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
 # RW variance by Gibbs grouping
 
 rwsd <- rep(0,npar)
-rwsd[paridx[[1]]] <- 0.11
-rwsd[paridx[[2]]] <- 0.11
+rwsd[paridx[[1]]] <- c(0.1,0)
+rwsd[paridx[[2]]] <- 0.08
 rwsd[paridx[[3]]] <- 0.025
 
-nits <- 1000 # total number of retained samples
+nits1 <- 10 # total number of retained samples
 system.time(zzz <- mcmc.abc(nits))
-zzz$acp/nits
+zzz$acp/nits1
 boxplot(zzz$pars,outline=F,col='magenta')
 
 # parallelised efficient version
+
+parvecold <- zzz$pars[nits1,]
+nits <- 500
+ncore <- 10
+thin <- 1
+mcnits <- floor(nits/ncore)
+system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc.abc,mc.cores=ncore))
 
 
 
