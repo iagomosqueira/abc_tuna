@@ -755,6 +755,197 @@ mcmc.abc <- function(nits) {
 } 
 # }}}
 
+# mcmc2.abc {{{
+mcmc2.abc <- function(nits) {
+
+  theta.mcmc <- matrix(nrow=nits,ncol=npar+2)
+  acp <- rep(0,ngibbs)
+  acphm <- 0
+
+  # get initial guess discrepancy
+
+  xx <- sim(R0,dep,hold,Mold,selpars,epsr,dms,pctarg,selidx) 
+
+  # LF discrepancy
+
+  phat <- xx$LF
+  kllf <- pobs*log(pobs/phat)
+  dlf <- sum(apply(kllf,2,function(x){sum(x[!is.nan(x)])}))
+
+  # CPUE discrepancy
+
+  if(seasonq) {
+
+    resq <- log(I[,,fcpue]/xx$I)
+    lnq <- apply(resq,2,mean)
+    resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+
+  } else {
+
+    resq <- log(I[,,fcpue]/xx$I)
+    lnq <- mean(resq)
+    resq <- resq-lnq
+
+  }
+
+  dcpue <- sum(dnorm(resq,0,sdcpue,TRUE))
+
+  ## priors (parameters + stock status)
+
+  # status priors
+
+  Bmsyrat <- xx$S[,3]/xx$Bmsy
+  Bmsyrat <- Bmsyrat[ybmsy]
+  dSSB <- xx$S[,srec-1]/xx$B0
+  dSSB <- dSSB[ydep]
+
+  if(length(ybmsy) == 1) {
+
+    sprior <- dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE)
+
+  } else {
+
+    sprior <- sum(dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE))
+
+  }
+
+  if(length(ydep) == 1) {
+
+    sprior <- sprior+dnorm(dSSB,mudep,sddep,TRUE)
+
+  } else {
+
+    sprior <- sprior+sum(dnorm(dSSB,mudep,sddep,TRUE))
+  }  
+
+  # parameter priors
+
+  pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
+
+  # starting discrepancy
+
+  dtotold <- dcpue+sprior+pprior-dlf
+
+  for(n in 1:(burn+thin*nits)) {
+
+    # resample (h,M) from pi(h,M)
+
+    zval <- rbinom(1,1,acphmu)
+    if(zval == 1) {
+    
+      xnew <- rmvnorm(1,c(hmu,Mmu),Sigma)
+      hold <- xnew[1,1]
+      Mold <- xnew[1,2]
+
+    }
+
+    # resample parameters conditional on (h,M)
+
+    for(gg in 1:ngibbs) {
+
+      epsrw <- rnorm(lidx[gg],0,rwsd[paridx[[gg]]])
+      parvecnew <- parvecold
+      parvecnew[paridx[[gg]]] <- parvecnew[paridx[[gg]]]+epsrw
+      R0x <- exp(parvecnew[1])
+      depx <- ilogit(parvecnew[2])
+      epsrx <- parvecnew[3:(ny+1)]
+      selvx <- exp(parvecnew[(ny+2):npar])
+      selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
+      xx <- sim(R0x,depx,hold,Mold,selparsx,epsrx,dms,pctarg,selidx)
+
+      # LF discrepancy
+
+      phat <- xx$LF
+      kllf <- pobs*log(pobs/phat)
+      dlf <- sum(apply(kllf,2,function(x){sum(x[!is.nan(x)])}))
+
+      # CPUE discrepancy
+
+      if(seasonq) {
+
+        resq <- log(I[,,fcpue]/xx$I)
+        lnq <- apply(resq,2,mean)
+        resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+ 
+      } else {
+
+        resq <- log(I[,,fcpue]/xx$I)
+        lnq <- mean(resq)
+        resq <- resq-lnq
+
+      }
+
+      dcpue <- sum(dnorm(resq,0,sdcpue,TRUE))
+
+      ## priors (parameters + stock status)
+
+      # status priors
+
+      Bmsyrat <- xx$S[,3]/xx$Bmsy
+      Bmsyrat <- Bmsyrat[ybmsy]
+      dSSB <- xx$S[,srec-1]/xx$B0
+      dSSB <- dSSB[ydep]
+
+      if(length(ybmsy) == 1) {
+
+        sprior <- dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE)
+
+      } else {
+
+        sprior <- sum(dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE))
+
+      }
+
+      if(length(ydep) == 1) {
+
+        sprior <- sprior+dnorm(dSSB,mudep,sddep,TRUE)
+
+      } else {
+
+        sprior <- sprior+sum(dnorm(dSSB,mudep,sddep,TRUE))
+
+      } 
+
+      # parameter priors
+
+      pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
+
+      ## ABC accept/reject:
+      # 1. KL(LF data) < KL_max or reject immediately
+      # 2. If 1 is true accept/reject given remaining discrepancy
+
+      if(dlf < KLmax) {
+
+        dtotnew <- dcpue+sprior+pprior-dlf
+        pirat <- min(dtotnew-dtotold,0)
+        uvar <- log(runif(1,0,1))
+        accpt <- ifelse(pirat>uvar,TRUE,FALSE)
+
+      } else {
+
+        accpt <- FALSE
+
+      }
+
+      if(accpt) {
+
+        parvecold <- parvecnew
+        dtotold <- dtotnew
+        if(n > burn) acp[gg] <- acp[gg]+1
+
+      }
+    }
+
+    # outputs
+  
+    if(n > burn & (n-burn) %% thin == 0) theta.mcmc[(n-burn)/thin,] <- c(parvecold,hold,Mold)
+
+  }
+
+  return(list(pars=theta.mcmc,acp=acp))
+} 
+# }}}
+
 # sim {{{
 sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,selidx) {
 
@@ -793,7 +984,7 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
   # relative H-split for MSY calcs
   ph <- as.vector(hinit[] / sum(hinit))
 
-  msy <- optimise(msyfn,interval=c(0,0.7),ph=ph,sela=sela,maximum=TRUE)
+  msy <- optimise(msyfn,interval=c(0,0.9),ph=ph,sela=sela,maximum=TRUE)
   Hmsy <- msy$maximum
   Cmsy <- msy$objective
   resmsy <- msypdyn(c(ns,na,nf), srec, R0, h, psi, M, as.vector(mata),
@@ -975,6 +1166,40 @@ get.mcmc.vars <- function(parsmat) {
 }
 # }}}
 
+# get.mcmc2.vars {{{
+
+get.mcmc2.vars <- function(parsmat) {
+
+  varlist <- list()                    
+  nnits <- dim(parsmat)[1]
+  for(nn in 1:nnits) {
+
+    R0x <- exp(mcpars[nn,1])
+    depx <- ilogit(mcpars[nn,2])
+    epsrx <- mcpars[nn,3:(ny+1)]
+    selvx <- exp(mcpars[nn,(ny+2):npar])
+    selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
+    hx <- mcpars[nn,npar+1]
+    Mx <- mcpars[nn,npar+2]
+    xx <- sim(R0x,depx,hx,Mx,selparsx,epsrx,dms,pctarg,selidx)
+
+    varlist[[nn]] <- list()
+    varlist[[nn]][['Rtot']] <- apply(xx$N[,1,srec,],1,sum)
+    varlist[[nn]][['SSB']] <- xx$S[,srec-1]
+    varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
+    varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
+    varlist[[nn]][['Cmsy']] <- xx$Cmsy
+    varlist[[nn]][['Ihat']] <- xx$I
+    varlist[[nn]][['LFhat']] <- xx$LF 
+
+    if(nn %% 100 == 0) cat("Iteration",nn,"of",nnits,"\n")
+  }
+
+  return(varlist)
+
+}
+# }}}
+
 # plot.mcmc.vars {{{
 plot.mcmc.vars <- function(varlist,type='dep') {
 
@@ -997,9 +1222,9 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dbmsy
-    vmin <- 0
-    vmax <- max(vv)
     vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
+    vmin <- 0 
+    vmax <- max(vq) 
     plot(yrs,vq[2,],ylim=c(vmin,vmax),xlab='year',ylab='Bmsy ratio',col='blue',type='l')
     lines(yrs,vq[1,],lty=2,col='blue')
     lines(yrs,vq[3,],lty=2,col='blue') 
@@ -1010,53 +1235,62 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$Rtot
-    vmin <- 0
-    vmax <- max(vv)
     vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
+    vmin <- 0
+    vmax <- max(vq) 
     plot(yrs,vq[2,],ylim=c(vmin,vmax),xlab='year',ylab='Recruitment',col='blue',type='l')
     lines(yrs,vq[1,],lty=2,col='blue')
     lines(yrs,vq[3,],lty=2,col='blue') 
 
   }
 
-  if(type == 'cpue') {
+}
+# }}}
 
-    vv <- array(dim=c(nnits,ny,ns))
-    for(nn in 1:nnits) {
-      
-      tmpv <- varlist[[nn]]$Ihat
-      iobs <- I[,,fcpue]
-      if(seasonq) {
+# {{{ plot.mcmc.cpue
+plot.mcmc.cpue <- function(mcpars) {
 
-        resq <- log(iobs/tmpv)
-        lnq <- apply(resq,2,mean)
-        vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue)
+  nnits <- length(varlist)
 
-      } else {
+  vv <- array(dim=c(nnits,ny,ns))
+   for(nn in 1:nnits) {
+     
+     tmpv <- varlist[[nn]]$Ihat
+     iobs <- I[,,fcpue]
+     if(seasonq) {
 
-        resq <- log(iobs/tmpv)
-        lnq <- mean(resq)
-        vv[nn,,] <- tmpv*exp(lnq)*rlnorm(ny*ns,0,sdcpue)  
+       resq <- log(iobs/tmpv)
+       lnq <- apply(resq,2,mean)
+       vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue)
 
-      }
-    }   
-    
-    vq <- apply(vv,c(2,3),quantile,c(0.025,0.5,0.975))
+     } else {
 
-    # ggplot the sumbitch
+       resq <- log(iobs/tmpv)
+       lnq <- mean(resq)
+       vv[nn,,] <- tmpv*exp(lnq)*rlnorm(ny*ns,0,sdcpue)  
 
-    vdf <- expand.grid(year=yrs,season=1:ns,obs=NA,hat=NA,lq=NA,uq=NA)
-    vdf$obs <- as.vector(iobs)
-    vdf$hat <- as.vector(vq[2,,])
-    vdf$lq <- as.vector(vq[1,,]) 
-    vdf$uq <- as.vector(vq[3,,]) 
-    ggplot(vdf)+geom_line(aes(x=year,y=hat),colour='blue')+geom_line(aes(x=year,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=year,y=uq),colour='blue',linetype='dashed')+geom_point(aes(x=year,y=obs),colour='magenta')+facet_wrap(~season)+ylab("CPUE")
+     }
+   }   
+   
+   vq <- apply(vv,c(2,3),quantile,c(0.025,0.5,0.975))
 
-  }
+   # ggplot the sumbitch
 
-  if(type == 'lf') {
+   vdf <- expand.grid(year=yrs,season=1:ns,obs=NA,hat=NA,lq=NA,uq=NA)
+   vdf$obs <- as.vector(iobs)
+   vdf$hat <- as.vector(vq[2,,])
+   vdf$lq <- as.vector(vq[1,,]) 
+   vdf$uq <- as.vector(vq[3,,]) 
+   ggplot(vdf)+geom_line(aes(x=year,y=hat),colour='blue')+geom_line(aes(x=year,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=year,y=uq),colour='blue',linetype='dashed')+geom_point(aes(x=year,y=obs),colour='magenta')+facet_wrap(~season)+ylab("CPUE")+theme_bw()
 
-    vv <- array(dim=c(nnits,nbins,nselg)) 
+}
+# }}}
+
+# {{{ plot.mcmc.lf
+plot.mcmc.lf <- function(mcvars) {
+
+  nnits <- length(varlist)
+  vv <- array(dim=c(nnits,nbins,nselg)) 
     for(nn in 1:nits) vv[nn,,] <- varlist[[nn]]$LF
     vq <- apply(vv,c(2,3),quantile,c(0.025,0.5,0.975))
     vdf <- expand.grid(length=mulbins,fishery=1:nselg,obs=NA,hat=NA,lq=NA,uq=NA) 
@@ -1064,9 +1298,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
     vdf$hat <- as.vector(vq[2,,])
     vdf$lq <- as.vector(vq[1,,]) 
     vdf$uq <- as.vector(vq[3,,]) 
-    ggplot(vdf)+geom_line(aes(x=length,y=hat),colour='blue')+geom_line(aes(x=length,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=length,y=uq),colour='blue',linetype='dashed')+geom_point(aes(x=length,y=obs),colour='magenta')+facet_wrap(~fishery)+ylab("Length frequency")
-
-  }
+    ggplot(vdf)+geom_line(aes(x=length,y=hat),colour='blue')+geom_line(aes(x=length,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=length,y=uq),colour='blue',linetype='dashed')+geom_point(aes(x=length,y=obs),colour='magenta')+facet_wrap(~fishery)+ylab("Length frequency")+theme_bw()
 
 }
 # }}}
@@ -1099,7 +1331,7 @@ plot.mcmc.sel <- function(mcpars) {
   vdf$med <- as.vector(vq[2,,])
   vdf$lq <- as.vector(vq[1,,])
   vdf$uq <- as.vector(vq[3,,]) 
-  ggplot(vdf)+geom_line(aes(x=length,y=med),colour='blue')+geom_line(aes(x=length,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=length,y=uq),colour='blue',linetype='dashed')+facet_wrap(~fishery)+ylab("Size selectivity") 
+  ggplot(vdf)+geom_line(aes(x=length,y=med),colour='blue')+geom_line(aes(x=length,y=lq),colour='blue',linetype='dashed')+geom_line(aes(x=length,y=uq),colour='blue',linetype='dashed')+facet_wrap(~fishery)+ylab("Size selectivity")+theme_bw()
 
 }
 
