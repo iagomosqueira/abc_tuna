@@ -165,7 +165,7 @@ RcppExport SEXP pdynlfcpue(SEXP dm_,SEXP srec_,SEXP R0_,SEXP hh_,SEXP psi_,SEXP 
 
         xsum = 0.;
         for(g=0;g<2;g++) 
-          for(a=0;a<na;a++) xsum += N(0,a,s,g)*sela(a,s,g,f);
+          for(a=0;a<na;a++) xsum += N(0,a,s,g)*sela(a,s,g,f)*wta(a,s,g);
 
         I(0,s) = xsum;
 
@@ -279,7 +279,7 @@ RcppExport SEXP pdynlfcpue(SEXP dm_,SEXP srec_,SEXP R0_,SEXP hh_,SEXP psi_,SEXP 
 
           xsum = 0.;
           for(g=0;g<2;g++) 
-            for(a=0;a<na;a++) xsum += N(y,a,s,g)*sela(a,s,g,f);
+            for(a=0;a<na;a++) xsum += N(y,a,s,g)*sela(a,s,g,f)*wta(a,s,g);
 
           I(y,s) = xsum;
 
@@ -371,6 +371,17 @@ RcppExport SEXP pdynlfcpue(SEXP dm_,SEXP srec_,SEXP R0_,SEXP hh_,SEXP psi_,SEXP 
   }
 
   List res = Rcpp::List::create(Named("S")=svec,Named("N")=nvec,Named("H")=hvec,Named("I")=ivec,Named("LF")=lvec);
+
+  mata.del();
+  wta.del();
+  Cb.del();
+  H.del();
+  sela.del();
+  N.del();
+  S.del();
+  I.del();
+  LF.del();
+  pla.del(); 
 
   return Rcpp::wrap(res);
 }

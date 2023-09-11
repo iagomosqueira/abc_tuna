@@ -213,6 +213,13 @@ RcppExport SEXP msypdyn(SEXP dm_,SEXP srec_,SEXP R0_,SEXP hh_,SEXP psi_,SEXP M_,
   }
 
   List res = Rcpp::List::create(Named("rho")=rho,Named("C")=cvec,Named("spr0")=spr0,Named("Bmsy")=Bbar,Named("Rmsy")=Rbar);
+
+  mata.del();
+  wta.del();
+  hinit.del();
+  C.del();
+  sela.del();
+  N.del(); 
   
   return Rcpp::wrap(res);
 
