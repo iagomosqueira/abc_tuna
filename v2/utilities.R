@@ -1248,7 +1248,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 # }}}
 
 # {{{ plot.mcmc.cpue
-plot.mcmc.cpue <- function(mcpars) {
+plot.mcmc.cpue <- function(varlist) {
 
   nnits <- length(varlist)
 

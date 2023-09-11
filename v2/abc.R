@@ -213,4 +213,3 @@ plot.mcmc.sel(mcpars)
 
 save.image("alb_abc_run1.rda")
 
-

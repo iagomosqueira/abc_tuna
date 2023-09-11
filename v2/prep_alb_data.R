@@ -1,4 +1,4 @@
-######################################################
+ #####################################################
 # prep IOTC ALB stock assessment data ################
 ######################################################
 # R. Hillary & I. Mosqueira 2023 #####################
@@ -8,7 +8,7 @@ library(FLCore)
 library(ggplot2)
 library(ggplotFL)
 
-load("../abc_tuna/data/data.RData")
+load("data.RData")
 
 # years of analyses
 
