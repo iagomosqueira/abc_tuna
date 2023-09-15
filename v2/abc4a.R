@@ -157,6 +157,10 @@ for(s in scpue) {
 
 sdcpue <- mean(sd.cpue)
 
+# no qtrend
+
+qtrend <- FALSE
+
 # sigmaR
 
 sigmar <- 0.3 # from assessment

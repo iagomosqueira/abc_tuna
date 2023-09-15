@@ -776,13 +776,31 @@ mcmc2.abc <- function(nits) {
 
   if(seasonq) {
 
-    resq <- log(I[,,fcpue]/xx$I)
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    }
+
     lnq <- apply(resq,2,mean)
     resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
 
   } else {
 
-    resq <- log(I[,,fcpue]/xx$I)
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    }
+
     lnq <- mean(resq)
     resq <- resq-lnq
 
@@ -863,13 +881,31 @@ mcmc2.abc <- function(nits) {
 
       if(seasonq) {
 
-        resq <- log(I[,,fcpue]/xx$I)
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        }
+
         lnq <- apply(resq,2,mean)
         resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
  
       } else {
 
-        resq <- log(I[,,fcpue]/xx$I)
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        } 
+
         lnq <- mean(resq)
         resq <- resq-lnq
 
@@ -967,13 +1003,31 @@ mcmc2a.abc <- function(nits) {
 
   if(seasonq) {
 
-    resq <- log(I[,,fcpue]/xx$I)
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    }
+
     lnq <- apply(resq,2,mean)
     resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
 
   } else {
 
-    resq <- log(I[,,fcpue]/xx$I)
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    } 
+
     lnq <- mean(resq)
     resq <- resq-lnq
 
@@ -1067,13 +1121,31 @@ mcmc2a.abc <- function(nits) {
 
       if(seasonq) {
 
-        resq <- log(I[,,fcpue]/xx$I)
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        }
+
         lnq <- apply(resq,2,mean)
         resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
  
       } else {
 
-        resq <- log(I[,,fcpue]/xx$I)
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        }
+
         lnq <- mean(resq)
         resq <- resq-lnq
 
@@ -1898,15 +1970,49 @@ plot.mcmc.cpue <- function(varlist) {
      iobs <- I[,,fcpue]
      if(seasonq) {
 
-       resq <- log(iobs/tmpv)
+       if(qtrend) {
+
+        resq <- log(iobs/(tmpv*qt))
+
+       } else {
+
+         resq <- log(iobs/tmpv) 
+
+       }
+
        lnq <- apply(resq,2,mean)
-       vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue)
+       if(qtrend) {
+
+         vv[nn,,] <- t(apply(tmpv*qt,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue)
+
+       } else {
+
+         vv[nn,,] <- t(apply(tmpv,1,function(x,lnq){x <- x*exp(lnq)},lnq))*rlnorm(ny*ns,0,sdcpue) 
+
+       }
 
      } else {
 
-       resq <- log(iobs/tmpv)
+       if(qtrend) {
+
+        resq <- log(iobs/(tmpv*qt))
+
+       } else {
+
+         resq <- log(iobs/tmpv) 
+
+       } 
+
        lnq <- mean(resq)
-       vv[nn,,] <- tmpv*exp(lnq)*rlnorm(ny*ns,0,sdcpue)  
+       if(qtrend) {
+
+         vv[nn,,] <- tmpv*qt*exp(lnq)*rlnorm(ny*ns,0,sdcpue)  
+
+       } else {
+
+         vv[nn,,] <- tmpv*exp(lnq)*rlnorm(ny*ns,0,sdcpue) 
+
+       }
 
      }
    }   

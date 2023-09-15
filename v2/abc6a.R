@@ -1,6 +1,8 @@
 # abc4.R - DESC
 # /home/mosquia/Active/Doing/ABC_tuna+iotc/abc_tuna/v2/abc.R
 # resample (h,M) from joint distribution
+# uses CPUE from fleet 3
+# add in 1% p.a. LL catchability increase
 
 # Copyright (c) WUR, 2023.
 # Author: Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
@@ -46,9 +48,9 @@ fnscale <- 1
 
 # years and values for stock status priors
 
-#yfmsy <- c(1,2,ny-1,ny) # first two, last two 
-#mufmsy <- c(0.6,0.55,0.57,0.6)
-#sdfmsy <- c(0.125,0.125,0.175,0.18)
+yfmsy <- c(1,ny) # first two, last two 
+mufmsy <- c(0.6,0.6)
+sdfmsy <- c(0.2,0.2)
 ybmsy <- c(ny-1,ny)
 mubmsy <- c(2.25,2)
 sdbmsy <- c(0.35,0.35)
@@ -140,7 +142,7 @@ lidx <- unlist(lapply(paridx,length))
 
 # SD in CPUE index
 
-fcpue <- 1
+fcpue <- 3
 scpue <- 1:4
 sd.cpue <- rep(NA,length(scpue))
 par(mfrow=c(2,2))
@@ -156,9 +158,11 @@ for(s in scpue) {
 
 sdcpue <- mean(sd.cpue)
 
-# no qtrend
+# catchability trend: 1% p.a.
 
-qtrend <- FALSE
+qtrend <- TRUE
+delq <- 0.01
+qt <- exp(delq*(0:(ny-1))) %o% rep(1,4)
 
 # sigmaR
 
@@ -171,11 +175,6 @@ KLmax <- 0.8 # consistent with minimum Neff = 20 multinomial
 # seasonal q for CPUE (T or F)
 
 seasonq <- TRUE
-
-# burn-in and thinning factor
- 
-burn <- 10
-thin <- 1
 
 ###################
 # run the sampler #
@@ -195,10 +194,12 @@ parvecold <- c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
 rwsd <- rep(0,npar)
 rwsd[paridx[[1]]] <- c(0.1,0.05)
 rwsd[paridx[[2]]] <- 0.08
-rwsd[paridx[[3]]] <- 0.025
+rwsd[paridx[[3]]] <- 0.03
 
-nits1 <- 10 # total number of retained samples
-system.time(zzz <- mcmc2.abc(nits1))
+burn <- 10
+thin <- 1
+nits1 <- 50 # total number of retained samples
+system.time(zzz <- mcmc2a.abc(nits1))
 zzz$acp/nits1
 boxplot(zzz$pars,outline=F,col='magenta')
 
@@ -209,9 +210,9 @@ hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 nits <- 500
 ncore <- 10
-thin <- 100
+thin <- 50
 mcnits <- floor(nits/ncore)
-system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc2.abc,mc.cores=ncore))
+system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc2a.abc,mc.cores=ncore))
 
 mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/(nits*thin)
 mcacp
@@ -223,11 +224,11 @@ mcvars <- get.mcmc2.vars(mcpars)
 
 plot.mcmc.vars(mcvars,'dep')
 plot.mcmc.vars(mcvars,'bmsy')
-plot.mcmc.vars(mcvars,'rec')
+plot.mcmc.vars(mcvars,'rec')           
 plot.mcmc.cpue(mcvars)
 plot.mcmc.lf(mcvars)
 plot.mcmc.sel(mcpars)
 
-save.image("alb_abc_run4.rda")
+save.image("alb_abc_run4a.rda")
 
 

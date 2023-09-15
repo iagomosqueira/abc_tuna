@@ -1,6 +1,7 @@
-# abc4.R - DESC
+# abc6.R - DESC
 # /home/mosquia/Active/Doing/ABC_tuna+iotc/abc_tuna/v2/abc.R
 # resample (h,M) from joint distribution
+# add in 1% p.a. LL catchability increase
 
 # Copyright (c) WUR, 2023.
 # Author: Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
@@ -156,9 +157,11 @@ for(s in scpue) {
 
 sdcpue <- mean(sd.cpue)
 
-# no qtrend
+# catchability trend: 1% p.a.
 
-qtrend <- FALSE
+qtrend <- TRUE
+delq <- 0.01
+qt <- exp(delq*(0:(ny-1))) %o% rep(1,4)
 
 # sigmaR
 
@@ -197,7 +200,7 @@ rwsd[paridx[[1]]] <- c(0.1,0.05)
 rwsd[paridx[[2]]] <- 0.08
 rwsd[paridx[[3]]] <- 0.025
 
-nits1 <- 10 # total number of retained samples
+nits1 <- 50 # total number of retained samples
 system.time(zzz <- mcmc2.abc(nits1))
 zzz$acp/nits1
 boxplot(zzz$pars,outline=F,col='magenta')
@@ -207,9 +210,9 @@ boxplot(zzz$pars,outline=F,col='magenta')
 parvecold <- zzz$pars[nits1,1:npar]
 hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
-nits <- 500
+nits <- 100
 ncore <- 10
-thin <- 100
+thin <- 50
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc2.abc,mc.cores=ncore))
 
@@ -228,6 +231,6 @@ plot.mcmc.cpue(mcvars)
 plot.mcmc.lf(mcvars)
 plot.mcmc.sel(mcpars)
 
-save.image("alb_abc_run4.rda")
+save.image("alb_abc_run6.rda")
 
 
