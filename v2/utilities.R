@@ -846,6 +846,8 @@ mcmc2.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
+    cat(n, "\n")
+
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1309,6 +1311,8 @@ mcmc3.abc <- function(nits) {
   for(n in 1:(burn+thin*nits)) {
 
     # resample (h,M) from pi(h,M)
+
+    cat(n, "\n")
 
     zval <- rbinom(1,1,acphmu)
     if(zval == 1) {

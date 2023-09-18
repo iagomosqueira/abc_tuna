@@ -208,7 +208,7 @@ parvecold <- zzz$pars[nits1,1:npar]
 hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 nits <- 500
-ncore <- 10
+ncore <- 4
 thin <- 100
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc2.abc,mc.cores=ncore))
