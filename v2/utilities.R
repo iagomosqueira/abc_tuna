@@ -846,8 +846,6 @@ mcmc2.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
-    cat(n, "\n")
-
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1312,8 +1310,6 @@ mcmc3.abc <- function(nits) {
 
     # resample (h,M) from pi(h,M)
 
-    cat(n, "\n")
-
     zval <- rbinom(1,1,acphmu)
     if(zval == 1) {
     
@@ -1661,6 +1657,270 @@ mcmc3a.abc <- function(nits) {
 } 
 # }}}
 
+# mcmc4.abc {{{
+mcmc4.abc <- function(nits) {
+
+  theta.mcmc <- matrix(nrow=nits,ncol=npar+2)
+  acp <- rep(0,ngibbs)
+  acphm <- 0
+
+  # get initial guess discrepancy
+
+  xx <- sim(R0,dep,hold,Mold,selpars,epsr,dms,pctarg,selidx) 
+
+  # LF discrepancy
+
+  phat <- xx$LF
+  kllf <- pobs*log(pobs/phat)
+  dlf <- sum(apply(kllf,2,function(x){sum(x[!is.nan(x)])}))
+
+  # CPUE discrepancy
+
+  if(seasonq) {
+
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    }
+
+    lnq <- apply(resq,2,mean)
+    resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+
+  } else {
+
+    if(qtrend) {
+
+      resq <- log(I[,,fcpue]/(xx$I*qt))
+
+    } else {
+
+      resq <- log(I[,,fcpue]/xx$I) 
+
+    } 
+
+    lnq <- mean(resq)
+    resq <- resq-lnq
+
+  }
+
+  dcpue <- sum(dnorm(resq,0,sdcpue,TRUE))
+
+  ## priors (parameters + stock status)
+
+  # status priors
+
+  Bmsyrat <- xx$S[,3]/xx$Bmsy
+  Bmsyrat <- Bmsyrat[ybmsy]
+  dSSB <- xx$S[,srec-1]/xx$B0
+  dSSB <- dSSB[ydep]
+  hmsy <- xx$Hmsy
+  hy <- apply(xx$H[yof,,],c(1,2),sum)
+  hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean) 
+
+  if(length(ybmsy) == 1) {
+
+    sprior <- dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE)
+
+  } else {
+
+    sprior <- sum(dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE))
+
+  }
+
+  if(length(ydep) == 1) {
+
+    sprior <- sprior+dnorm(dSSB,mudep,sddep,TRUE)
+
+  } else {
+
+    sprior <- sprior+sum(dnorm(dSSB,mudep,sddep,TRUE))
+  }  
+
+  if(length(yof) == 1) {
+
+    zof <- max(hmsyrat-1,0)
+    dof <- dnorm(0,0,sdof,TRUE)-dnorm(zof,0,sdof,TRUE)
+    sprior <- sprior+dof
+
+  } else {
+
+    zof <- hmsyrat-1
+    zof[zof < 0] <- 0
+    dof <- dnorm(zof,0,sdof,TRUE)-dnorm(0,0,sdof,TRUE)
+    sprior <- sprior+sum(dof) 
+
+  } 
+
+  # parameter priors
+
+  pprior <- sum(dnorm(epsr,0,sigmar,TRUE))
+
+  # starting discrepancy
+
+  dtotold <- dcpue+sprior+pprior-dlf
+
+  for(n in 1:(burn+thin*nits)) {
+
+    # resample (h,M) from pi(h,M)
+
+    zval <- rbinom(1,1,acphmu)
+    if(zval == 1) {
+    
+      xnew <- rmvnorm(1,c(hmu,Mmu),Sigma)
+      hold <- xnew[1,1]
+      Mold <- xnew[1,2]
+
+    }
+
+    # resample parameters conditional on (h,M)
+
+    for(gg in 1:ngibbs) {
+
+      epsrw <- rnorm(lidx[gg],0,rwsd[paridx[[gg]]])
+      parvecnew <- parvecold
+      parvecnew[paridx[[gg]]] <- parvecnew[paridx[[gg]]]+epsrw
+      R0x <- exp(parvecnew[1])
+      depx <- ilogit(parvecnew[2])
+      epsrx <- parvecnew[3:(ny+1)]
+      selvx <- exp(parvecnew[(ny+2):npar])
+      selparsx <- cbind(selvx[1:nselg],selvx[(nselg+1):(2*nselg)],selvx[(2*nselg+1):(3*nselg)])
+      xx <- sim(R0x,depx,hold,Mold,selparsx,epsrx,dms,pctarg,selidx)
+
+      # LF discrepancy
+
+      phat <- xx$LF
+      kllf <- pobs*log(pobs/phat)
+      dlf <- sum(apply(kllf,2,function(x){sum(x[!is.nan(x)])}))
+
+      # CPUE discrepancy
+
+      if(seasonq) {
+
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        }
+
+        lnq <- apply(resq,2,mean)
+        resq <- t(apply(resq,1,function(x,lnq){x <- x-lnq},lnq))
+ 
+      } else {
+
+        if(qtrend) {
+
+          resq <- log(I[,,fcpue]/(xx$I*qt))
+
+        } else {
+
+          resq <- log(I[,,fcpue]/xx$I) 
+
+        }
+
+        lnq <- mean(resq)
+        resq <- resq-lnq
+
+      }
+
+      dcpue <- sum(dnorm(resq,0,sdcpue,TRUE))
+
+      ## priors (parameters + stock status)
+
+      # status priors
+
+      Bmsyrat <- xx$S[,3]/xx$Bmsy
+      Bmsyrat <- Bmsyrat[ybmsy]
+      dSSB <- xx$S[,srec-1]/xx$B0
+      dSSB <- dSSB[ydep]
+      hmsy <- xx$Hmsy
+      hy <- apply(xx$H[yof,,],c(1,2),sum)
+      hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean)  
+
+      if(length(ybmsy) == 1) {
+
+        sprior <- dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE)
+
+      } else {
+
+        sprior <- sum(dnorm(Bmsyrat,mubmsy,sdbmsy,TRUE))
+
+      }
+
+      if(length(ydep) == 1) {
+
+        sprior <- sprior+dnorm(dSSB,mudep,sddep,TRUE)
+
+      } else {
+
+        sprior <- sprior+sum(dnorm(dSSB,mudep,sddep,TRUE))
+
+      } 
+
+      if(length(yof) == 1) {
+
+        zof <- max(hmsyrat-1,0)
+        dof <- dnorm(0,0,sdof,TRUE)-dnorm(zof,0,sdof,TRUE)
+        sprior <- sprior+dof
+
+      } else {
+
+        zof <- hmsyrat-1
+        zof[zof < 0] <- 0
+        dof <- dnorm(zof,0,sdof,TRUE)-dnorm(0,0,sdof,TRUE)
+        sprior <- sprior+sum(dof) 
+
+      } 
+        
+
+      # parameter priors
+
+      pprior <- sum(dnorm(epsrx,0,sigmar,TRUE))
+
+      ## ABC accept/reject:
+      # 1. KL(LF data) < KL_max or reject immediately
+      # 2. If 1 is true accept/reject given remaining discrepancy
+
+      if(dlf < KLmax) {
+
+        dtotnew <- dcpue+sprior+pprior-dlf
+        pirat <- min(dtotnew-dtotold,0)
+        uvar <- log(runif(1,0,1))
+        accpt <- ifelse(pirat>uvar,TRUE,FALSE)
+
+      } else {
+
+        accpt <- FALSE
+
+      }
+
+      if(accpt) {
+
+        parvecold <- parvecnew
+        dtotold <- dtotnew
+        if(n > burn) acp[gg] <- acp[gg]+1
+
+      }
+    }
+
+    # outputs
+  
+    if(n > burn & (n-burn) %% thin == 0) theta.mcmc[(n-burn)/thin,] <- c(parvecold,hold,Mold)
+
+  }
+
+  return(list(pars=theta.mcmc,acp=acp))
+} 
+# }}}
+
 # sim {{{
 sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,selidx) {
 
@@ -1738,7 +1998,6 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
     
   # fishery for CPUE generation
 
-  fcpue <- 1
   resp2 <- pdynlfcpue(c(ny,ns,na,nbins,nf),srec,R0,h,psi,epsr,spr0,M,
     as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),fcpue)
 
@@ -1870,6 +2129,10 @@ get.mcmc.vars <- function(parsmat) {
     varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
     varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
     varlist[[nn]][['Cmsy']] <- xx$Cmsy
+    hmsy <- xx$Hmsy
+    hy <- apply(xx$H[,,],c(1,2),sum)
+    hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean) 
+    varlist[[nn]][['hmsyrat']] <- hmsyrat
     varlist[[nn]][['Ihat']] <- xx$I
     varlist[[nn]][['LFhat']] <- xx$LF 
 
@@ -1924,11 +2187,11 @@ get.mcmc2.vars <- function(parsmat) {
 # }}}
 
 # plot.mcmc.vars {{{
-plot.mcmc.vars <- function(varlist,type='dep') {
+plot.mcmc.vars <- function(varlist,ptype) {
 
   nnits <- length(varlist)
 
-  if(type == 'dep') {
+  if(ptype == 'dep') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dep
@@ -1941,7 +2204,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 
   }
 
-  if(type == 'bmsy') {
+  if(ptype == 'bmsy') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dbmsy
@@ -1952,9 +2215,22 @@ plot.mcmc.vars <- function(varlist,type='dep') {
     lines(yrs,vq[1,],lty=2,col='blue')
     lines(yrs,vq[3,],lty=2,col='blue') 
 
+  }
+
+  if(ptype == 'hmsy') {
+
+    vv <- matrix(nrow=nnits,ncol=ny)
+    for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$hmsyrat
+    vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
+    vmin <- 0
+    vmax <- max(vq) 
+    plot(yrs,vq[2,],ylim=c(vmin,vmax),xlab='year',ylab=expression(H[y]/H[msy]),col='blue',type='l')
+    lines(yrs,vq[1,],lty=2,col='blue')
+    lines(yrs,vq[3,],lty=2,col='blue') 
+
   } 
 
-  if(type == 'rec') {
+  if(ptype == 'rec') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$Rtot
