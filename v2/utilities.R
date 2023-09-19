@@ -846,8 +846,6 @@ mcmc2.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
-    cat(n, "\n")
-
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1312,8 +1310,6 @@ mcmc3.abc <- function(nits) {
 
     # resample (h,M) from pi(h,M)
 
-    cat(n, "\n")
-
     zval <- rbinom(1,1,acphmu)
     if(zval == 1) {
     
@@ -1738,7 +1734,6 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
     
   # fishery for CPUE generation
 
-  fcpue <- 1
   resp2 <- pdynlfcpue(c(ny,ns,na,nbins,nf),srec,R0,h,psi,epsr,spr0,M,
     as.vector(mata),as.vector(wta),as.vector(sela),nvec,cvec,as.vector(pla),fcpue)
 
@@ -1870,6 +1865,10 @@ get.mcmc.vars <- function(parsmat) {
     varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
     varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
     varlist[[nn]][['Cmsy']] <- xx$Cmsy
+    hmsy <- xx$Hmsy
+    hy <- apply(xx$H[,,],c(1,2),sum)
+    hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean) 
+    varlist[[nn]][['hmsyrat']] <- hmsyrat
     varlist[[nn]][['Ihat']] <- xx$I
     varlist[[nn]][['LFhat']] <- xx$LF 
 
@@ -1904,6 +1903,10 @@ get.mcmc2.vars <- function(parsmat) {
     varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
     varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
     varlist[[nn]][['Cmsy']] <- xx$Cmsy
+    hmsy <- xx$Hmsy
+    hy <- apply(xx$H[,,],c(1,2),sum)
+    hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean) 
+    varlist[[nn]][['hmsyrat']] <- hmsyrat 
     varlist[[nn]][['Ihat']] <- xx$I
     varlist[[nn]][['LFhat']] <- xx$LF 
 
@@ -1916,11 +1919,11 @@ get.mcmc2.vars <- function(parsmat) {
 # }}}
 
 # plot.mcmc.vars {{{
-plot.mcmc.vars <- function(varlist,type='dep') {
+plot.mcmc.vars <- function(varlist,ptype) {
 
   nnits <- length(varlist)
 
-  if(type == 'dep') {
+  if(ptype == 'dep') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dep
@@ -1933,7 +1936,7 @@ plot.mcmc.vars <- function(varlist,type='dep') {
 
   }
 
-  if(type == 'bmsy') {
+  if(ptype == 'bmsy') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$dbmsy
@@ -1944,9 +1947,22 @@ plot.mcmc.vars <- function(varlist,type='dep') {
     lines(yrs,vq[1,],lty=2,col='blue')
     lines(yrs,vq[3,],lty=2,col='blue') 
 
+  }
+
+  if(ptype == 'hmsy') {
+
+    vv <- matrix(nrow=nnits,ncol=ny)
+    for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$hmsyrat
+    vq <- apply(vv,2,quantile,c(0.025,0.5,0.975))
+    vmin <- 0
+    vmax <- max(vq) 
+    plot(yrs,vq[2,],ylim=c(vmin,vmax),xlab='year',ylab=expression(H[y]/H[msy]),col='blue',type='l')
+    lines(yrs,vq[1,],lty=2,col='blue')
+    lines(yrs,vq[3,],lty=2,col='blue') 
+
   } 
 
-  if(type == 'rec') {
+  if(ptype == 'rec') {
 
     vv <- matrix(nrow=nnits,ncol=ny)
     for(nn in 1:nnits) vv[nn,] <- varlist[[nn]]$Rtot
