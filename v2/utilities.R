@@ -1899,13 +1899,21 @@ get.mcmc2.vars <- function(parsmat) {
     xx <- sim(R0x,depx,hx,Mx,selparsx,epsrx,dms,pctarg,selidx)
 
     varlist[[nn]] <- list()
+    varlist[[nn]][['N']] <- xx$N
     varlist[[nn]][['Rtot']] <- apply(xx$N[,1,srec,],1,sum)
     varlist[[nn]][['SSB']] <- xx$S[,srec-1]
     varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
     varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
     varlist[[nn]][['Cmsy']] <- xx$Cmsy
+    
+    hmsy <- xx$Hmsy
+    hy <- apply(xx$H[,,],c(1,2),sum)
+    hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean)
+    varlist[[nn]][['hmsyrat']] <- hmsyrat
+    varlist[[nn]][['H']] <- xx$H
+
     varlist[[nn]][['Ihat']] <- xx$I
-    varlist[[nn]][['LFhat']] <- xx$LF 
+    varlist[[nn]][['LFhat']] <- xx$LF
 
     if(nn %% 100 == 0) cat("Iteration",nn,"of",nnits,"\n")
   }

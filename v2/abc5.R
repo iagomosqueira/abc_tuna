@@ -253,5 +253,5 @@ plot(x1,p1,type='l',xlim=c(xmin,xmax),ylim=c(0,pmax),xlab=expression(sigma[R]),y
 lines(x2,p2,lty=2,col='purple')
 legend("topright",lty=c(1,2),col=c("black","purple"),legend=c("Posterior","Prior"),bty='n')
 
-save.image("alb_abc_run5-long.rda")
+save.image("alb_abc_run5.rda")
 
