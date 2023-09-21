@@ -24,21 +24,8 @@
 #' @param pvars Proposal variances
 #' @param Fstatus F/FMSY prior
 
-library(Rcpp)
-library(FLCore)
-library(ggplotFL)
-library(parallel)
-library(mvtnorm)
 source("utilities.R")
 
-sourceCpp("init_pdyn.cpp")
-sourceCpp("msy_pdyn.cpp")
-sourceCpp("pdyn_lfcpue.cpp")
-
-# NC by fleet [y, s, f]
-# 
-
-#load('../data/data.RData')
 load("alb_abcdata.rda")
 load("hmuprior.rda")
 
@@ -214,9 +201,9 @@ parvecold <- zzz$pars[nits1,1:npar]
 hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 sigmarold <- zzz$pars[nits1,npar+3]
-nits <- 50
-ncore <- 5
-thin <- 10
+nits <- 500
+ncore <- 10
+thin <- 100
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc3.abc,mc.cores=ncore))
 
@@ -253,5 +240,4 @@ plot(x1,p1,type='l',xlim=c(xmin,xmax),ylim=c(0,pmax),xlab=expression(sigma[R]),y
 lines(x2,p2,lty=2,col='purple')
 legend("topright",lty=c(1,2),col=c("black","purple"),legend=c("Posterior","Prior"),bty='n')
 
-save.image("alb_abc_run5.rda")
-
+save.image("runs/alb_abc_run5.rda", compress="xz")

@@ -24,21 +24,8 @@
 #' @param pvars Proposal variances
 #' @param Fstatus F/FMSY prior
 
-library(Rcpp)
-library(FLCore)
-library(ggplotFL)
-library(parallel)
-library(mvtnorm)
 source("utilities.R")
 
-sourceCpp("init_pdyn.cpp")
-sourceCpp("msy_pdyn.cpp")
-sourceCpp("pdyn_lfcpue.cpp")
-
-# NC by fleet [y, s, f]
-# 
-
-#load('../data/data.RData')
 load("alb_abcdata.rda")
 load("hmuprior.rda")
 
@@ -206,7 +193,7 @@ hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 nits <- 500
 ncore <- 10
-thin <- 50
+thin <- 100
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc4.abc,mc.cores=ncore))
 
@@ -226,6 +213,4 @@ plot.mcmc.cpue(mcvars)
 plot.mcmc.lf(mcvars)
 plot.mcmc.sel(mcpars)
 
-save.image("alb_abc_run4b.rda")
-
-
+save.image("runs/alb_abc_run4b.rda", compress="xz")

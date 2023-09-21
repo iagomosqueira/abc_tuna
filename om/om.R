@@ -29,9 +29,21 @@ dmns <- dimnames(stk)
 dmns$year <- dmns$year[seq(71 - 20, 71)]
 
 
+# --- LOAD abc4
+
+run4 <- mget(load("../v2/runs/alb_abc_run4.rda", verbose=FALSE,
+  envir=(NE. <- new.env())), envir=NE.)
+
+stk4 <- propagate(stk, run4$nits / 10)
+
+nabc <- Reduce(combine, lapply(run4$mcvars[c(TRUE, rep(FALSE, 9))], function(x)
+  FLQuant(aperm(x$N, c(2,1,4,3)), dimnames=dmns) / 1000
+))
+
+
 # --- LOAD abc5
 
-run5 <- mget(load("../v2/alb_abc_run5.rda", verbose=FALSE,
+run5 <- mget(load("../v2/runs/alb_abc_run5.rda", verbose=FALSE,
   envir=(NE. <- new.env())), envir=NE.)
 
 stk5 <- propagate(stk, run5$nits)
@@ -50,18 +62,37 @@ stock.n(stk5)[, dmns$year] <- nabc
 
 stock(stk5) <- computeStock(stk5)
 
-# TODO: CHECK recruitment timing
-
-# LOAD catch.n
-
 # LOAD refpts: FMSY, BMSY, B0
 
 # LOAD SRR: B0, R0, h, spr0
+
+
+do.call(get.mcmc2.vars, run5)
+get.mcmc2.vars(mcpars)
 
 # double B0 = R0*spr0;
 # double alp = 4.*hh/(spr0*(1.-hh));
 # double bet = (5.*hh-1.)/(B0*(1.-hh));
 # Rtot = (alp*S[ysp][spwn]/(1.+bet*S[ysp][spwn]))*exp(epsr(y-1)); 
+
+
+# FUTURE
+
+fut <- fwdWindow(noseason(stk5, spwn.season=4), end=2030)
+
+srr <- predictModel(model=geomean, params=FLPar(c(12000),
+  dimnames=list(params='a', iter=1:500)))
+
+sigr <- log(sqrt(yearVars(rec(fut[, dmns$year, 'F']))))
+rec(fut[, dmns$year, 'F'])
+
+ftrg <- unitMeans(rec(fut)[, ac(2021:2023)] %=% 0.01)
+
+system.time(
+fut <- fwd(fut, sr=srr, fbar=ftrg)
+)
+
+plot(fut)
 
 r0 <- exp(run5$mcpars[,1])
 

@@ -6,6 +6,15 @@
 #
 # Distributed under the terms of the EUPL-1.2
 
+library(Rcpp)
+library(FLCore)
+library(ggplotFL)
+library(parallel)
+library(mvtnorm)
+
+sourceCpp("init_pdyn.cpp")
+sourceCpp("msy_pdyn.cpp")
+sourceCpp("pdyn_lfcpue.cpp")
 
 logit <- function(x){
   return(log(x/(1-x)))
@@ -473,6 +482,8 @@ rmcmc.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
+    cat(n, "\n")
+
     for(gg in 1:ngibbs) {
 
       epsrw <- rnorm(lidx[gg],0,rwsd[paridx[[gg]]])
@@ -649,6 +660,8 @@ mcmc.abc <- function(nits) {
   dtotold <- dcpue+sprior+pprior-dlf
 
   for(n in 1:(burn+thin*nits)) {
+
+    cat(n, "\n")
 
     for(gg in 1:ngibbs) {
 
@@ -845,6 +858,8 @@ mcmc2.abc <- function(nits) {
   dtotold <- dcpue+sprior+pprior-dlf
 
   for(n in 1:(burn+thin*nits)) {
+
+    cat(n, "\n")
 
     # resample (h,M) from pi(h,M)
 
@@ -1086,6 +1101,8 @@ mcmc2a.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
+    cat(n, "\n")
+
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1308,6 +1325,8 @@ mcmc3.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
+    cat(n, "\n")
+
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1518,6 +1537,8 @@ mcmc3a.abc <- function(nits) {
   dtotold <- dcpue+sprior+pprior-dlf
 
   for(n in 1:(burn+thin*nits)) {
+
+    cat(n, "\n")
 
     # resample (h,M) from pi(h,M)
 
@@ -1766,6 +1787,8 @@ mcmc4.abc <- function(nits) {
 
   for(n in 1:(burn+thin*nits)) {
 
+    cat(n, "\n")
+
     # resample (h,M) from pi(h,M)
 
     zval <- rbinom(1,1,acphmu)
@@ -1934,7 +1957,6 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
   rhotarg <- (dep*(5*h-1)+1-h)/(4*h)
 
   # create selectivity-at-age
-
   sela <- get.sel.age(nf,nselg,selidx,selpars) 
     
   # target vector (rho+pc)
@@ -1966,6 +1988,7 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
     as.vector(wta), as.vector(sela), Hmsy * ph)
   
   Bmsy <- resmsy$Bmsy
+  # TODO: OUTPUT spr0
   spr0 <- resinit$spr0
   B0 <- R0*spr0
   alp <- 4*h/(spr0*(1-h))
@@ -2013,7 +2036,8 @@ sim <- function(R0=1e6, dep=0.5, h=0.75, M=0.075, selpars, epsr, dms, pctarg,sel
   phat <- LFhat[,flf]
   phat <- apply(phat,2,function(x){x <- x/sum(x)})
 
-  return(list(N=N,S=S,H=H,LF=phat,I=Ihat,Bmsy=Bmsy,Cmsy=Cmsy,Hmsy=hmsyv,B0=B0))
+  return(list(N=N,S=S,H=H,LF=phat,I=Ihat,Bmsy=Bmsy,Cmsy=Cmsy,Hmsy=hmsyv,
+    B0=B0, sela=sela))
 
 }
 # }}}
@@ -2146,10 +2170,10 @@ get.mcmc.vars <- function(parsmat) {
 
 # get.mcmc2.vars {{{
 
-get.mcmc2.vars <- function(parsmat) {
+get.mcmc2.vars <- function(mcpars) {
 
   varlist <- list()                    
-  nnits <- dim(parsmat)[1]
+  nnits <- dim(mcpars)[1]
   for(nn in 1:nnits) {
 
     R0x <- exp(mcpars[nn,1])
@@ -2177,6 +2201,11 @@ get.mcmc2.vars <- function(parsmat) {
 
     varlist[[nn]][['Ihat']] <- xx$I
     varlist[[nn]][['LFhat']] <- xx$LF
+    varlist[[nn]][['B0']] <- xx$B0
+    varlist[[nn]][['R0']] <- R0x
+    varlist[[nn]][['M']] <- Mx
+    varlist[[nn]][['h']] <- hx
+    varlist[[nn]][['sela']] <- xx$sela
 
     if(nn %% 100 == 0) cat("Iteration",nn,"of",nnits,"\n")
   }
