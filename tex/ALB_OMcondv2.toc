@@ -1,0 +1,11 @@
+\contentsline {section}{\numberline {1}Background}{1}{section.1}%
+\contentsline {section}{\numberline {2}Methods}{1}{section.2}%
+\contentsline {section}{\numberline {3}Albacore case study}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Stock status priors}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Covariant prior for steepness and natural mortality}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}OM scenarios}{4}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Results}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Fits to the data inputs}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Estimates of $\sigma ^2_r$}{7}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Discussion}{7}{section.5}%
+\contentsline {section}{\numberline {6}Acknowledgements}{7}{section.6}%

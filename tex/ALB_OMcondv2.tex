@@ -1,6 +1,6 @@
 \documentclass[12pt,a4paper,twoside,times,sky,standard]{csiroreport2017}
 
-
+\usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{hyperref}
@@ -21,11 +21,6 @@
 \newcommand{\bmsy}{B_{\rm msy}}
 \newcommand{\cmsy}{C_{\rm msy}}
 \newcommand{\hmsy}{H_{\rm msy}}
-
-%Fill in the title, authors, in confidence text, etc as required.
-%If you don't want one or the other then just comment them out.
-%\docinconfidence[Commercial In Confidence]
-
 
 \docdivision[Environment]
 
@@ -88,7 +83,7 @@ The ABC approach relaxes the requirement for a specific likelihood (i.e. data ge
 
 The other very useful thing we can easily embed within a sampling scheme is informative priors on various elements of the process variables, $X$, which effectively imply a prior on the key parameters, $\pi(\xtheta)$. This means we can also define informative priors for the various stock status variables (MSY ratios, SSB depletion \textit{etc}.) and include the most relevant recent data, without having to fully model the historical dynamics and data and define appropriate likelihoods for these data. If we are departing from the stock assessment approach, this implies that we have not really succeeded in being able to robustly estimate the distribution of these key status variables. This approach takes a step back and instead tries to define scenarios (specifically distributional scenarios) for these variables at particular periods in time that are consistent with previous assessment experiences and the data. In terms of likely data sources, the two most obvious examples in tuna models are the CPUE indices of abundance, and the catch at length composition. For some examples we may also have mark-recapture data (e.g. tropical tuna) or other data sources. These can be naturally added to the algorithm, as long as the population and fishery model can generate observations for them and a distance metric can be computed.
 
-The population models and associated biological relationships will be very similar to the stock assessment, given they need to have the same structure as the existing OMs (which we don't propose need changing at this stage). The main technical challenge is constructing the discrepancy statistics for the data, and the sampling scheme to generate samples from our approximate distribution of the parameter and population dynamic variables. We have moved the technical details of how these are done to Appendix A to avoid an unnecessary amount of technical exposition in the main body of the paper: what we are trying to demonstrate is that we can get the variables we need for OM conditioning, using plausible status scenarios, key data sets and emerging powerful statistical sampling techniques.
+The population models and associated biological relationships will be very similar to the stock assessment, given they need to have the same structure as the existing OMs (which we do not propose need changing at this stage). The main technical challenge is constructing the discrepancy statistics for the data, and the sampling scheme to generate samples from our approximate distribution of the parameter and population dynamic variables. We have moved the technical details of how these are done to Appendix A to avoid an unnecessary amount of technical exposition in the main body of the paper: what we are trying to demonstrate is that we can get the variables we need for OM conditioning, using plausible status scenarios, key data sets and emerging powerful statistical sampling techniques.
 
 \section{Albacore case study}
 
@@ -99,11 +94,11 @@ The basis for the models and data explored in the Albacore example is contained 
     \item No explicit spatial structure but with the same areas-as-fleets approach as the stock assessment.
     \item Sexually-structured population dynamics driven by growth and selectivity-at-age (selectivity-at-length is not sexually structured by fishery).
     \item Time-frame for conditioning is 2000 -- 2020, so as to model all surviving cohorts.
-    \item Model considers 4 long-line fleets, 1 ``other'' fleet and 1 purse seine fleet. The 16 seasonal long-line fleets are condensed into 4 fleets, each with 4 seasons of catch, effort and size data (e.g. LL1 is fisheries 1-4 in the assessment).
+    \item Model considers 4 long-line fleets, 1 \emph{other} fleet and 1 purse seine fleet. The 16 seasonal long-line fleets are condensed into 4 fleets, each with 4 seasons of catch, effort and size data (e.g. LL1 is fisheries 1-4 in the assessment).
     \item A Beverton \& Holt steepness-unfished recruitment stock-recruit relationship is used with lognormally distributed deviations constrained by a pre-specified $\sigma_r=0.3$, as per the assessment \cite{albsa}.
 \end{itemize}
 
-The stock assessment model fits to the disaggregated length-frequency data and the seasonal CPUE data from the longline fleets. The initial approach taken in the ABC albacore modelling was not to fit to disaggregated length frequency data, which is very variable and noisy from season to season and year to year. Instead, we aggregate the size data across years and seasons and fit to a mean size frequency data set per fishery. The reason behind this choice is to obtain a representative selectivity relationship for each fishery, and give a clear indication of the ``average'' size structure in the fisheries over the time period. Additionally, it purposefully reduces the influence of the size data on the overall population abundance scale, which is a known issue already considered in the previous OM grid.
+The stock assessment model fits to the disaggregated length-frequency data and the seasonal CPUE data from the longline fleets. The initial approach taken in the ABC albacore modelling was not to fit to disaggregated length frequency data, which is very variable and noisy from season to season and year to year. Instead, we aggregate the size data across years and seasons and fit to a mean size frequency data set per fishery. The reason behind this choice is to obtain a representative selectivity relationship for each fishery, and give a clear indication of the average size structure in the fisheries over the time period. Additionally, it purposefully reduces the influence of the size data on the overall population abundance scale, which is a known issue already considered in the previous OM grid.
 
 \subsection{Stock status priors}
 
@@ -163,7 +158,7 @@ The key OM stock status variables we summarise are relative SSB, $\Delta_y=SSB_y
     \item \textbf{R3a}: Same as R1a but assumes 1\% increasing catchability trend
 \end{itemize}
 
-Before outlining the results it will be helpful to focus on the important qualitative differences between the OM scenarios. Table 4.1 summarises the status of each of the seven OM conditioning scenarios described above. Scenario R1 is arguably where the data - specifically the CPUE abundance indices - have the most influence of both population scale and abundance, biomass and mortality trends. Scenarios R1a, R2a, and R3a are all penalised to be “close” to the high-level stock status summaries coming from the stock assessment \cite{albsa} - in particular the harvest rate MSY ratio priors in the first and final years are applied in these cases. The reason for this is because of the lack of information in the CPUE from fleet 3 in relation to population scale and an apparent production function emerging from the models. For these runs we saw intermittent very high abundance samples (i.e. a very skewed right-hand tail in the $R_0$ posterior distribution) where the trends in abundance were just as easily explained by recruitment variability versus fishing pressure. As a result, the relative SSB estimates are still concordant with the status priors but fishing mortality is effectively zero for these samples. By applying not just the biomass-based status priors but additionally the harvest rate MSY ratio priors (scenarios Rxa) we avoided these pathological very high abundance runs because the harvest rates could not reduce to such low levels a priori. This is not, perhaps, surprising given the apparent lack of correlation between abundance trends and overall catch biomass - this is quite different for the fleet 1 CPUE and the results attest to this fundamental difference between the two fleet CPUE indices. For the R1b run the overfishing probability penalty was applied due to the appearance of high levels of overfishing in certain runs in the last 5 years of the model time-frame. As already
+Before outlining the results it will be helpful to focus on the important qualitative differences between the OM scenarios. Table 4.1 summarises the status of each of the seven OM conditioning scenarios described above. Scenario R1 is arguably where the data - specifically the CPUE abundance indices - have the most influence of both population scale and abundance, biomass and mortality trends. Scenarios R1a, R2a, and R3a are all penalised to be close to the high-level stock status summaries coming from the stock assessment \cite{albsa} - in particular the harvest rate MSY ratio priors in the first and final years are applied in these cases. The reason for this is because of the lack of information in the CPUE from fleet 3 in relation to population scale and an apparent production function emerging from the models. For these runs we saw intermittent very high abundance samples (i.e. a very skewed right-hand tail in the $R_0$ posterior distribution) where the trends in abundance were just as easily explained by recruitment variability versus fishing pressure. As a result, the relative SSB estimates are still concordant with the status priors but fishing mortality is effectively zero for these samples. By applying not just the biomass-based status priors but additionally the harvest rate MSY ratio priors (scenarios Rxa) we avoided these pathological very high abundance runs because the harvest rates could not reduce to such low levels a priori. This is not, perhaps, surprising given the apparent lack of correlation between abundance trends and overall catch biomass - this is quite different for the fleet 1 CPUE and the results attest to this fundamental difference between the two fleet CPUE indices. For the R1b run the overfishing probability penalty was applied due to the appearance of high levels of overfishing in certain runs in the last 5 years of the model time-frame. As already
 stated, if we do not penalise against these runs they are likely to result in rapid declines in abundance in the first years of the projections at current catch levels. As can clearly be seen from Table 4.1 applying this prior does not really change the biomass status results, but it does avoid the high levels of overfishing in the final conditioning years. What this overfishing penalty does is to increase the correlation between the various parameters and avoid those combinations that result in very high overfishing rates. The 1\% p.a. increasing trend in catchability scenarios (R3 \& R3a) results in slightly lower median biomass ratios by the end of the modelling time-frame, stronger overall declines in abundance over the time-frame, and most clearly the lowest/highest quantiles of the status ratios - depending on the ratio and what quantile is pessimistic relative to the median - are lower/higher for these scenarios.
 
 \begin{table}[hb]
@@ -172,14 +167,14 @@ stated, if we do not penalise against these runs they are likely to result in ra
             \hline
             OM scenario & $\Delta_{2000}$ & $\Delta_{2020}$ & $\tilde{\Delta}_{2020}$ & $\mathcal{H}_{2020}$\\
             & & & & \\
-Prior & 0.5 (0.3–0.7)    & n/a              & 2 (1.3–2.7)      & 0.6 (0.2–1) \\
-R1    & 0.76 (0.61–0.97) & 0.41 (0.22-0.56) & 1.9 (1.02–2.58)  & 1.13 (0.5-3.78) \\
-R1a   & 0.56 (0.4–0.72)  & 0.48 (0.3–0.69)  & 2.01 (1.42–2.61) & 0.68 (0.33–1.38) \\
-R1b   & 0.74 (0.61–0.9)  & 0.42 (0.24–0.54) & 1.98 (1.16–2.49) & 0.98 (0.46–2.4) \\
-R2    & 0.71 (0.57–0.84) & 0.41 (0.21–0.55) & 1.91 (0.99–2.53) & 1.22 (0.45–3.57) \\
-R2a   & 0.56 (0.41–0.72) & 0.47 (0.28–0.71) & 2.03 (1.3–2.54)  & 0.65 (0.34–1.4) \\
-R3    & 0.78 (0.6–0.91)  & 0.38 (0.15–0.52) & 1.77 (0.7–2.44)  & 1.4 (0.58–5.06) \\
-R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.35–1.45) \\
+Prior & 0.5 (0.3-0.7)    & n/a              & 2 (1.3-2.7)      & 0.6 (0.2-1) \\
+R1    & 0.76 (0.61-0.97) & 0.41 (0.22-0.56) & 1.9 (1.02-2.58)  & 1.13 (0.5-3.78) \\
+R1a   & 0.56 (0.4-0.72)  & 0.48 (0.3-0.69)  & 2.01 (1.42-2.61) & 0.68 (0.33-1.38) \\
+R1b   & 0.74 (0.61-0.9)  & 0.42 (0.24-0.54) & 1.98 (1.16-2.49) & 0.98 (0.46-2.4) \\
+R2    & 0.71 (0.57-0.84) & 0.41 (0.21-0.55) & 1.91 (0.99-2.53) & 1.22 (0.45-3.57) \\
+R2a   & 0.56 (0.41-0.72) & 0.47 (0.28-0.71) & 2.03 (1.3-2.54)  & 0.65 (0.34-1.4) \\
+R3    & 0.78 (0.6-0.91)  & 0.38 (0.15-0.52) & 1.77 (0.7-2.44)  & 1.4 (0.58-5.06) \\
+R3a   & 0.63 (0.48-0.77) & 0.42 (0.25-0.59) & 1.94 (1.23-2.5)  & 0.71 (0.35-1.45) \\
             & & & & \\
             \hline
         \end{tabular}
@@ -327,7 +322,7 @@ sample of $\sigr$, conditional on the $\gam_y$, we sample a precision variate fr
 
 \subsection*{Construction of discrepancy statistics}
 
-For the CPUE based abundance index, in the IOTC MSE context CPUE is the key candidate MP data input so we are going to have to simulate the CPUE data in the OMs (which requires catchability and variance parameters). For this reason we actually used a modified log-normal distribution for these data. The data were log transformed and standardised to have mean zero (this removes the need for estimating catchability at estimation run time). The catchability can be efficiently estimated post-estimation so this treatment doesn't cause issues later on in the OMs. The \emph{overall} variance in the distribution was estimated by fitting a LOESS smoother to the log-transformed index and using the residual SD in the likelihood - in this regard this part of the discrepancy function is closer to SL than ABC.
+For the CPUE based abundance index, in the IOTC MSE context CPUE is the key candidate MP data input so we are going to have to simulate the CPUE data in the OMs (which requires catchability and variance parameters). For this reason we actually used a modified log-normal distribution for these data. The data were log transformed and standardised to have mean zero (this removes the need for estimating catchability at estimation run time). The catchability can be efficiently estimated post-estimation so this treatment does not cause issues later on in the OMs. The \emph{overall} variance in the distribution was estimated by fitting a LOESS smoother to the log-transformed index and using the residual SD in the likelihood - in this regard this part of the discrepancy function is closer to SL than ABC.
 
 For the length composition data we took a nonparametric approach using the concept of the Kullback-Leibler divergence (KLD, \cite{kl}): this is a measure of the divergence between in this case a discrete probability distribution $P_i$, relative to a reference distribution $Q_i$. It is defined as follows:
 
