@@ -18,27 +18,41 @@
 library(mse)
 library(ss3om)
 
+source("utilities.R")
+
 library(patchwork)
 
 # LOAD SS3 FLStock
 
 stk <- readFLSss3('../data/base')
+range(stk, c("minfbar", "maxfbar")) <- c(1, 12)
 
-# ABC dimnames
-dmns <- dimnames(stk)
-dmns$year <- dmns$year[seq(71 - 20, 71)]
+oms <- window(stk, start=2000)
+units(harvest(oms)) <- "hr"
 
+oms <- simplify(oms, 'season')
+
+# "N", "Rtot", "SSB", "dep", "dbmsy", "Cmsy", "hmsyrat" "H", "Ihat", "LFhat", "B0", "R0", "M", "h", "sela"
 
 # --- LOAD abc4
 
 run4 <- mget(load("../v2/runs/alb_abc_run4.rda", verbose=FALSE,
-  envir=(NE. <- new.env())), envir=NE.)
+  envir=(.NE <- new.env())), envir=.NE)
 
-stk4 <- propagate(stk, run4$nits / 10)
+out4 <- mc.output(run4$mcvars)
 
-nabc <- Reduce(combine, lapply(run4$mcvars[c(TRUE, rep(FALSE, 9))], function(x)
-  FLQuant(aperm(x$N, c(2,1,4,3)), dimnames=dmns) / 1000
-))
+# FLStock
+
+ha <- computeHarvest(oms)
+
+aa <- simplify(oms, 'season')
+
+# FLSR
+
+# FLom
+
+
+
 
 
 # --- LOAD abc5

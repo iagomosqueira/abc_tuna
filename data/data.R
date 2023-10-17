@@ -23,6 +23,12 @@ dat <- SS_readdat('sa/abt.dat')
 
 # --- OUTPUT data matrices / arrays
 
+# LOOKUP table: group LL & Other by area, keep PS, drop DN.
+lookup <- data.table(
+  fleet=c(seq(1, 16), 19, seq(20, 23)),
+  area=c(rep(seq(1, 4), each=4), 5, rep(6, 4)))
+setkey(lookup, "fleet")
+
 # - EXTRACT catch per fleet, year and season
 
 catches <- data.table(dat$catch)[year >= 1954]
@@ -32,13 +38,13 @@ setkey(catches, "fleet")
 ncatches <- catches[lookup, on="fleet"]
 setnames(ncatches, c('seas', 'catch'), c('season', 'data'))
 
-catches <- ncatches[, .(data=sum(data, na.rm=TRUE)), by=.(year, season, unit)]
+catches <- ncatches[, .(data=sum(data, na.rm=TRUE)), by=.(year, season, area)]
 
-setorder(catches, year, season, unit)
+setorder(catches, year, season, area)
 
-ggplot(catches[unit %in% seq(1:4)],
-  aes(x=ISOdate(year, season * 3, 1), y=data, group=unit)) +
-  geom_line() + facet_wrap(~unit)+ geom_point() +
+ggplot(catches[area %in% seq(1:4)],
+  aes(x=ISOdate(year, season * 3, 1), y=data, group=area)) +
+  geom_line() + facet_wrap(~area)+ geom_point() +
   ggtitle("LL fleets by area")
 
 
@@ -56,12 +62,6 @@ lencomp <- melt(lencomp, id=c("year", "season", "fleet", "Nsamp"),
 
 # FIX season
 lencomp[, season:=(season + 0.5) / 3]
-
-# LOOKUP table: group LL & Other by area, keep PS, drop DN.
-lookup <- data.table(
-  fleet=c(seq(1, 16), 19, seq(20, 23)),
-  unit=c(rep(seq(1, 4), each=4), 5, rep(6, 4)))
-setkey(lookup, "fleet")
 
 # A new fleet
 lencomp <- lencomp[lookup[fleet < 20,], on="fleet"]
