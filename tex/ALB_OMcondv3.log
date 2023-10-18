@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2023.5.31)  12 OCT 2023 15:06
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2023.5.31)  19 OCT 2023 09:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -398,32 +398,32 @@ wth and selectivity-at-age (selectivity-
  []
 
 [4] [5] [6] [7]
-<figs/case4_cpuefits.pdf, id=133, 505.89pt x 505.89pt>
+<figs/case4_cpuefits.pdf, id=134, 505.89pt x 505.89pt>
 File: figs/case4_cpuefits.pdf Graphic file (type pdf)
 <use figs/case4_cpuefits.pdf>
 Package pdftex.def Info: figs/case4_cpuefits.pdf  used on input line 188.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/case4a_cpuefits.pdf, id=134, 505.89pt x 505.89pt>
+<figs/case4a_cpuefits.pdf, id=135, 505.89pt x 505.89pt>
 File: figs/case4a_cpuefits.pdf Graphic file (type pdf)
 <use figs/case4a_cpuefits.pdf>
 Package pdftex.def Info: figs/case4a_cpuefits.pdf  used on input line 188.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/case4_lffits.pdf, id=135, 505.89pt x 505.89pt>
+<figs/case4_lffits.pdf, id=136, 505.89pt x 505.89pt>
 File: figs/case4_lffits.pdf Graphic file (type pdf)
 <use figs/case4_lffits.pdf>
 Package pdftex.def Info: figs/case4_lffits.pdf  used on input line 200.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/case4a_lffits.pdf, id=136, 505.89pt x 505.89pt>
+<figs/case4a_lffits.pdf, id=137, 505.89pt x 505.89pt>
 File: figs/case4a_lffits.pdf Graphic file (type pdf)
 <use figs/case4a_lffits.pdf>
 Package pdftex.def Info: figs/case4a_lffits.pdf  used on input line 200.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/case4_lengthsel.pdf, id=137, 505.89pt x 505.89pt>
+<figs/case4_lengthsel.pdf, id=138, 505.89pt x 505.89pt>
 File: figs/case4_lengthsel.pdf Graphic file (type pdf)
 <use figs/case4_lengthsel.pdf>
 Package pdftex.def Info: figs/case4_lengthsel.pdf  used on input line 208.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/case4a_lengthsel.pdf, id=138, 505.89pt x 505.89pt>
+<figs/case4a_lengthsel.pdf, id=139, 505.89pt x 505.89pt>
 File: figs/case4a_lengthsel.pdf Graphic file (type pdf)
 <use figs/case4a_lengthsel.pdf>
 Package pdftex.def Info: figs/case4a_lengthsel.pdf  used on input line 208.
@@ -450,12 +450,12 @@ Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                removing `math shift' on input line 214.
 
 [8 <./figs/case4_cpuefits.pdf> <./figs/case4a_cpuefits.pdf>]
-<figs/pvsp_sigmar_R2.pdf, id=156, 505.89pt x 505.89pt>
+<figs/pvsp_sigmar_R2.pdf, id=157, 505.89pt x 505.89pt>
 File: figs/pvsp_sigmar_R2.pdf Graphic file (type pdf)
 <use figs/pvsp_sigmar_R2.pdf>
 Package pdftex.def Info: figs/pvsp_sigmar_R2.pdf  used on input line 220.
 (pdftex.def)             Requested size: 199.17207pt x 199.17207pt.
-<figs/pvsp_sigmar_R2a.pdf, id=157, 505.89pt x 505.89pt>
+<figs/pvsp_sigmar_R2a.pdf, id=158, 505.89pt x 505.89pt>
 File: figs/pvsp_sigmar_R2a.pdf Graphic file (type pdf)
 <use figs/pvsp_sigmar_R2a.pdf>
 Package pdftex.def Info: figs/pvsp_sigmar_R2a.pdf  used on input line 220.
@@ -484,32 +484,32 @@ Package rerunfilecheck Info: File `ALB_OMcondv3.out' has not changed.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 352.
  ) 
 Here is how much of TeX's memory you used:
- 6909 strings out of 482600
- 100545 string characters out of 5949960
- 356484 words of memory out of 5000000
- 21722 multiletter control sequences out of 15000+600000
+ 6909 strings out of 483183
+ 100545 string characters out of 5966292
+ 355119 words of memory out of 5000000
+ 21686 multiletter control sequences out of 15000+600000
  545949 words of font info for 76 fonts, out of 8000000 for 9000
- 350 hyphenation exceptions out of 8191
+ 14 hyphenation exceptions out of 8191
  38i,10n,31p,2897b,393s stack positions out of 5000i,500n,10000p,200000b,80000s
- </home/mosqu003/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1095.
-600pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texliv
-e/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmmib10.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
-/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
-10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on ALB_OMcondv3.pdf (15 pages, 396425 bytes).
+ </home/hil32f/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1095.60
+0pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></
+usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/sh
+are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/te
+xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-
+dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fo
+nts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmmib10.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10
+.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></
+usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/sh
+are/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on ALB_OMcondv3.pdf (15 pages, 396440 bytes).
 PDF statistics:
- 326 PDF objects out of 1000 (max. 8388607)
- 270 compressed objects within 3 object streams
+ 327 PDF objects out of 1000 (max. 8388607)
+ 271 compressed objects within 3 object streams
  72 named destinations out of 1000 (max. 500000)
  139 words of extra memory for PDF output out of 10000 (max. 10000000)
 
