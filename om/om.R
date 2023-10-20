@@ -8,137 +8,137 @@
 
 # TODO: window(stk), keep full in observations(oem)
 
-# REFERENCE
-#
-# mcpars: c(log(R0),logit(dep),epsr,log(as.vector(selpars)))
-#
-# mcvars: "N"  "Rtot" "SSB" "dep" "dbmsy" "Cmsy" "hmsyrat" "H" "Ihat" "LFhat"
-
 
 library(mse)
 library(ss3om)
 
 source("utilities.R")
 
-library(patchwork)
 
-# LOAD SS3 FLStock
+# -- LOAD SS3 FLStock
 
 stk <- readFLSss3('../data/base')
 range(stk, c("minfbar", "maxfbar")) <- c(1, 12)
 
-oms <- window(stk, start=2000)
-units(harvest(oms)) <- "hr"
-
-oms <- simplify(oms, 'season')
-
-# "N", "Rtot", "SSB", "dep", "dbmsy", "Cmsy", "hmsyrat" "H", "Ihat", "LFhat", "B0", "R0", "M", "h", "sela"
-
-# --- LOAD abc4
+# -- LOAD abc4
 
 run4 <- mget(load("../v2/runs/alb_abc_run4.rda", verbose=FALSE,
   envir=(.NE <- new.env())), envir=.NE)
 
+# EXTRACT output for all iters
 out4 <- mc.output(run4$mcvars)
 
-# FLStock
+# BUG: DIFF caa vs. catch.n(stk)
+catch.n(stk) <- run4$caa
 
-ha <- computeHarvest(oms)
+# -- CREATE FLStock for om: 2000-2020, no seasons, 500 iters
 
-aa <- simplify(oms, 'season')
+ostk <- window(stk, start=2000)
+units(harvest(ostk)) <- "hr"
 
-# FLSR
+ostk <- simplify(ostk, 'season')
+ostk <- propagate(ostk, 500)
 
-# FLom
+# ASSIGN out4 FLStock
 
+stk4 <- ostk
 
+# m
+m(stk4)[, ac(2000:2020)] <- seasonSums(out4$m)
 
+# stock.n
+stock.n(stk4)[, ac(2000:2020)] <- out4$stock.n[,,,1]
 
+# Q4 y-1 * exp(-m) NOTE: rec Q1 after simplify, from Q4 y-1 + Z?
+stock.n(stk4)[1, ac(2001:2020)] <- out4$stock.n[1, ac(2000:2019),, 4] /
+  exp(-out4$m[1, ac(2000:2019),, 4])
+stock.n(stk4)[1, ac(2000)] <- stock.n(stk)[1, ac(1999),, 4] /
+  exp(-m(stk)[1, ac(1999),, 4])
 
-# --- LOAD abc5
+# harvest
+harvest(stk4)[, ac(2000:2020)] <- computeHarvest(stk4)[, ac(2000:2020)]
 
-run5 <- mget(load("../v2/runs/alb_abc_run5.rda", verbose=FALSE,
-  envir=(NE. <- new.env())), envir=NE.)
+harvest(stk4) <- recomputeHarvest(stk4)
 
-stk5 <- propagate(stk, run5$nits)
+# spwn
+m.spwn(stk4) <- harvest.spwn(stk4) <- 0.83
 
-# SET mat
-mat(stk5)[,,,4] <- mat(stk5)[,,,1]
-mat(stk5)[,,,1] <- 0
+# EXTEND
+fut4 <- fwdWindow(stk4, end=2040)
 
-# LOAD stock.n
+# ASSIGN selectivities
+harvest(fut4)[, ac(2021:2040)] <- areaMeans(seasonMeans(out4$catch.sel))
 
-nabc <- Reduce(combine, lapply(run5$mcvars, function(x)
-  FLQuant(aperm(x$N, c(2,1,4,3)), dimnames=dmns) / 1000
-))
+# -- BUILD FLSR
 
-stock.n(stk5)[, dmns$year] <- nabc
+# CORRECT srpars$R0 for Q1
+srp <- out4$srpars
+srp$R0 <- srp$R0 / exp(-c(seasonSums(out4$m[1,'2000','F', 1:3])))
 
-stock(stk5) <- computeStock(stk5)
+srr4 <- FLSR(model=bevholtss3, params=srp)
 
-# LOAD refpts: FMSY, BMSY, B0
+# -- BUILD FLom
 
-# LOAD SRR: B0, R0, h, spr0
+om4 <- FLom(stock=stk4, sr=srr4, refpts=out4$refpts)
 
+om4 <- fwdWindow(om4, end=2040)
 
-do.call(get.mcmc2.vars, run5)
-get.mcmc2.vars(mcpars)
+# DEVIANCES
 
-# double B0 = R0*spr0;
-# double alp = 4.*hh/(spr0*(1.-hh));
-# double bet = (5.*hh-1.)/(B0*(1.-hh));
-# Rtot = (alp*S[ysp][spwn]/(1.+bet*S[ysp][spwn]))*exp(epsr(y-1)); 
+rdev <- residuals(unitSums(rec(stk4)),
+  predict(srr4, ssb=ssb(stk4)[,,'F']), 'log')
 
+# BUG: deviances<- append fails
+residuals(sr(om4)) <- rlnormar1(500, meanlog=0, sdlog=sqrt(yearVars(rdev)),
+  rho=rho(rdev), years=2000:2040)
 
-# FUTURE
+# test.R:fwd(F=0)
 
-fut <- fwdWindow(noseason(stk5, spwn.season=4), end=2030)
+# -- BUILD FLoem
 
-srr <- predictModel(model=geomean, params=FLPar(c(12000),
-  dimnames=list(params='a', iter=1:500)))
+# stk
+estk <- propagate(simplify(stk, c('season', 'unit')), 500)
+estk[, ac(2000:2020)] <- simplify(stk4, 'unit')
 
-sigr <- log(sqrt(yearVars(rec(fut[, dmns$year, 'F']))))
-rec(fut[, dmns$year, 'F'])
+# BUG: JUMP in ssb
 
-ftrg <- unitMeans(rec(fut)[, ac(2021:2023)] %=% 0.01)
+plot(simplify(stk), estk)
 
-system.time(
-fut <- fwd(fut, sr=srr, fbar=ftrg)
+# idx
+
+LLCPUE1 <- FLIndexBiomass(
+  index=out4$index.hat[,,,1],
+  index.var=out4$index.hat[,,,1] %=% 0.2,
+  catch.wt=unitMeans(stock.wt(stk4)),
+  sel.pattern=expand(unitMeans(out4$catch.sel[,,,1,1]),
+  year=2000:2020, fill=TRUE),
+  range=c(startf=0, endf=0.25))
+
+LLCPUE1 <- qapply(LLCPUE1, function(x) {
+  dimnames(x)$unit <- 'unique'
+  dimnames(x)$season <- '1'
+  dimnames(x)$area <- 'unique'
+  return(x)
+  }
 )
 
-plot(fut)
+idx <- FLIndices(LLCPUE1=LLCPUE1)
 
-r0 <- exp(run5$mcpars[,1])
+# BUG: Your exploitation rate is not defined as F, cannot be added to M
+index.q(idx[[1]]) <- computeQ(idx,
+  simplify(stk4, 'unit', harvest=FALSE),
+  FLQuants(LLCPUE1_Q1=out4$index.hat[,,,1]))[[1]]
 
-# LOAD other results
+# deviances
 
-dep <- run5$mcpars[,2]
-sigmar <- exp(run5$mcpars[,3]) / (1 + exp(run5$mcpars[,3]))
+devs <- list(stk=FLQuants(catch.n=rlnorm(500, unitSums(catch.n(om4) %=% 0),
+  0.3)))
 
+oem4 <- FLoem(observations=list(stk=fwdWindow(estk, end=2040),
+  idx=fwdWindow(idx, end=2040)),
+  deviances=devs, method=sampling.oem)
 
-# TODO: COMPARE ssbs
+# TODO: verify(oem, om)
 
-nssb <- Reduce(combine, lapply(run5$mcvars, function(x)
-  FLQuant(x$SSB, dimnames=list(age='all', year=dmns$year, unit='F', season=4))
-))
-
-
-# --- PLOT
-
-pdf(file="abc5_ss.pdf")
-
-plot(append(window(stock.n(stk), end=1999), nabc)) +
-  geom_vline(xintercept=ISOdate(2000, 1, 1)) +
-  ggtitle("SS3 + ABC Ns")
-
-plot(stock.n(stk)) + ggtitle("SS3 Ns")
-
-plot(stock.n(stk)['0',, 'F', 4], stock.n(stk5)['0',, 'F', 4]) +
-  ggtitle("SS3 + ABC age 0")
-plot(stock.n(stk)['1',, 'F', 1], stock.n(stk5)['1',, 'F', 1]) +
-  ggtitle("SS3 + ABC age 1")
-
-plot(ssb(stk5)[, dmns$year, 'F', 4], nssb, ssb(stk)[, dmns$year, 'F', 1]) +
-  ggtitle("SS3 + ABC SSB") + ylim(c(0,NA))
-
-dev.off()
+# -- SAVE
+save(om4, oem4, file='om4.rda', compress='xz')

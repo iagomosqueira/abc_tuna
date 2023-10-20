@@ -6,10 +6,24 @@
 #
 # Distributed under the terms of the EUPL-1.2
 
-# XX {{{
-# }}}
 
-  # "Rtot", "dbmsy", "Cmsy", "hmsyrat" "H", "Ihat", "LFhat"
+# N - stock.n
+# Rtot - rec
+# SSB - ssb
+# dep - dep
+# dbmsy
+# Cmsy - refpts$MSY
+# hmsyrat
+# H - hr
+# Ihat
+# LFhat
+# B0 - refpts$B0
+# R0 - refpts$R0
+# M - m
+# h - srpars$s
+# sela - catch.sel
+
+# mc.output {{{
 
 mc.output <- function(x) {
 
@@ -25,6 +39,16 @@ mc.output <- function(x) {
 
   # M - m
   m <- expand(FLQuant(unlist(lapply(x, '[[', 'M')),
+    quant='age',dim=c(1,1,1,1,1,nits)),
+    age=0:14, year=2000:2020, season=1:4, unit=c('F', 'M'))
+
+  # Ihat - index.hat
+  index.hat <- Reduce(combine, lapply(x, function(i)
+   FLQuant(c(i$Ihat), dimnames=list(age='all', year=2000:2020, season=1:4))
+  ))
+
+  # H - hr
+  hr <- expand(FLQuant(unlist(lapply(x, '[[', 'H')),
     quant='age',dim=c(1,1,1,1,1,nits)),
     age=0:14, year=2000:2020, season=1:4, unit=c('F', 'M'))
 
@@ -44,18 +68,13 @@ mc.output <- function(x) {
   sel <- yearMeans(areaMeans(catch.sel %*% cap))
   sel <- sel %/% apply(sel, 2:6, max)
 
-  ggplot(iter(sel, 1), aes(x=age,y=data, group=unit)) +
-    geom_line() +
-    facet_wrap(~season)
-
-
   # - FLPar
 
   # B0
   B0 <- unlist(lapply(x, '[[', 'B0'))
 
-  # R0
-  R0 <- unlist(lapply(x, '[[', 'R0'))
+  # R0, value in thousands
+  R0 <- unlist(lapply(x, '[[', 'R0')) / 1000
 
   # h
   h <- unlist(lapply(x, '[[', 'h'))
@@ -76,6 +95,11 @@ mc.output <- function(x) {
    FLQuant(i$SSB, dimnames=list(age='all', year=2000:2020))
   ))
 
+  # Rtot
+  rec <- Reduce(combine, lapply(x, function(i)
+   FLQuant(i$Rtot, dimnames=list(age='0', year=2000:2020))
+  ))
+
   # dep
   dep <- Reduce(combine, lapply(x, function(i)
    FLQuant(i$dep, dimnames=list(age='all', year=2000:2020))
@@ -84,9 +108,11 @@ mc.output <- function(x) {
   # TODO: Rtot does not match unitSums(N[1,,,4])
 
   return(list(stock.n=stock.n, m=m, catch.sel=catch.sel, ssb=ssb, dep=dep,
-    srpars=srpars, refpts=refpts))
+    srpars=srpars, refpts=refpts, hr=hr, rec=rec, index.hat=index.hat))
 }
+# }}}
 
+# buildOM (stk,vars) {{{
 
 buildOM <- function(stk, vars) {
 
@@ -100,3 +126,4 @@ buildOM <- function(stk, vars) {
   # SIMPLIFY
 
 }
+# }}}
