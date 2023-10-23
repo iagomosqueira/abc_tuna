@@ -11,12 +11,12 @@
 # Rtot - rec
 # SSB - ssb
 # dep - dep
-# dbmsy
+# dbmsy - dep@BMSY
 # Cmsy - refpts$MSY
-# hmsyrat
+# hmsyrat - ratio hr/hrmsy year
 # H - hr
-# Ihat
-# LFhat
+# Ihat - (index.hat)
+# LFhat - (lf.hat)
 # B0 - refpts$B0
 # R0 - refpts$R0
 # M - m
@@ -34,7 +34,7 @@ mc.output <- function(x) {
 
   # N - stock.n (y, a, s, u)
   stock.n <- Reduce(combine, lapply(x, function(i)
-   FLQuant(aperm(i$N, c(2,1,4,3)), dimnames=dmns) / 1000
+   FLQuant(aperm(i$N, c(2,1,4,3)), dimnames=dmns, units='1000') / 1000
   ))
 
   # M - m
@@ -47,19 +47,23 @@ mc.output <- function(x) {
    FLQuant(c(i$Ihat), dimnames=list(age='all', year=2000:2020, season=1:4))
   ))
 
-  # H - hr
-  hr <- expand(FLQuant(unlist(lapply(x, '[[', 'H')),
-    quant='age',dim=c(1,1,1,1,1,nits)),
-    age=0:14, year=2000:2020, season=1:4, unit=c('F', 'M'))
+  # H [y, s, f] - hr
+  hr <- FLQuant(unlist(lapply(x, '[[', 'H')),
+    dimnames=list(age='all', year=2000:2020, season=1:4, area=1:6,
+    iter=seq(nits)), units='hr')
 
   # sela - catch.sel (a, s, u, f)
   catch.sel <- Reduce(combine, lapply(x, function(i) {
     res <- FLQuant(dimnames=list(age=0:14, year=2000, unit=c('F', 'M'),
-      season=1:4, area=1:6))
+      season=1:4, area=1:6), units='')
     res[] <- aperm(i$sela, c(1,3,2,4))
     return(res %/% apply(res, 2:6, max))
     }
   ))
+ 
+  # HR @age
+  hra <- expand(areaMeans(hr), age=0:14, unit=c('F', 'M'), area=1:6,
+    fill=TRUE) * expand(catch.sel, year=2000:2020, fill=TRUE)
 
   # catches (y, s, f)
   caf <- FLQuant(dimnames=list(year=2018:2020, season=1:4, area=1:6))
@@ -108,7 +112,8 @@ mc.output <- function(x) {
   # TODO: Rtot does not match unitSums(N[1,,,4])
 
   return(list(stock.n=stock.n, m=m, catch.sel=catch.sel, ssb=ssb, dep=dep,
-    srpars=srpars, refpts=refpts, hr=hr, rec=rec, index.hat=index.hat))
+    srpars=srpars, refpts=refpts, hr=hr, rec=rec, index.hat=index.hat,
+    hra=hra))
 }
 # }}}
 
