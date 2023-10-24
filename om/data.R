@@ -48,6 +48,11 @@ stock.n(stk4)[1, ac(2000:2020)] <- out4$stock.n[1, ac(2000:2020),, 4] *
 # ADD harvest rate, mean over fleets (area) & seasons
 harvest(stk4)[, ac(2000:2020)] <- areaMeans(seasonMeans(out4$hra))
 
+# BUG: catch from HR
+unitSums(quantSums(stock.n(stk4) * harvest(stk4) * stock.wt(stk4)))
+unitSums(catch(stk4))
+
+
 # spwn, mid Q4
 m.spwn(stk4) <- harvest.spwn(stk4) <- 0.83
 
@@ -139,17 +144,20 @@ plot(FLStocks(SS3=simplify(stk), OEM=estk)) +
 index.q <- Reduce(sbind, lapply(1:4, function(i)
   log(window(index(ids[[i]]), start=2000) / out4$index.hat[,,,i])))
 
+# PICKUP index
 ll1 <- propagate(ids[[1]], 500)
 range(ll1, c('startf', 'endf')) <- c(0, 0.25)
 
-index(ll1)[, ac(2000:2020)] <- exp(index.q[,,,1]) * out4$index.hat[,,,1]
+# ADD index.q & catch.wt
+index.q(ll1)[, ac(2000:2020)] <- exp(index.q[,,,1]) 
+catch.wt(ll1) <- unitMeans(catch.wt(stk)[,,,1])[, ac(1975:2020)]
 
-plot(FLIndices(SS=ll1, ABC=survey(stk4, ll1[, ac(2000:2020)])))
+plot(FLIndices(SS=ll1, ABC=survey(stk4, ll1[, ac(2000:2020)]))) +
+  ggtitle("LLCPUE1_Q1 vs. survey(stk)")
 
-idx <- FLIndices(LLCPUE1=idx)
+idx <- FLIndices(LLCPUE1=ll1)
 
 
-# LLCPUE1 <- FLIndexBiomass(
 #   index=out4$index.hat[,,,1],
 #   index.q=index.q[,,,1],
 #   index.var=out4$index.hat[,,,1] %=% 0.2,
