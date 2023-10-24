@@ -16,6 +16,7 @@ source("utilities.R")
 # -- LOAD SS3 FLStock & FLIndices
 
 stk <- readFLSss3('../data/base')
+# BUG: PICK UP from starter.ss
 range(stk, c("minfbar", "maxfbar")) <- c(1, 12)
 
 # FLIndices
@@ -24,162 +25,146 @@ ids <- readFLIBss3('../data/base')
 
 # -- LOAD abc4
 
-run4 <- mget(load("../v2/runs/alb_abc_run4.rda", verbose=FALSE,
+run <- mget(load("../v2/runs/alb_abc_run4b.rda", verbose=FALSE,
   envir=(.NE <- new.env())), envir=.NE)
 
 # EXTRACT output for all iters
-out4 <- mc.output(run4$mcvars)
+out <- mc.output(run$mcvars, run$C)
 
 
 # -- CREATE FLStock for om: 2000-2020, no seasons, 500 iters
 
-stk4 <- propagate(simplify(window(stk, start=2000), 'season'), 500)
+stko <- propagate(simplify(window(stk, start=2000), 'season'), 500)
 
 # ADD m, sum accross seasons
-m(stk4)[, ac(2000:2020)] <- seasonSums(out4$m)
+m(stko)[, ac(2000:2020)] <- seasonSums(out$m)
 
 # ADD stock.n Q1
-stock.n(stk4)[, ac(2000:2020)] <- out4$stock.n[,,,1]
+stock.n(stko)[, ac(2000:2020)] <- out$stock.n[,,,1]
 
 # age 0 Q1 = Q4 * exp(m Q1-3)
-stock.n(stk4)[1, ac(2000:2020)] <- out4$stock.n[1, ac(2000:2020),, 4] *
-  exp(seasonSums(out4$m[1, ac(2000:2020),, 1:3]))
+stock.n(stko)[1, ac(2000:2020)] <- out$stock.n[1, ac(2000:2020),, 4] *
+  exp(seasonSums(out$m[1, ac(2000:2020),, 1:3]))
 
 # ADD harvest rate, mean over fleets (area) & seasons
-harvest(stk4)[, ac(2000:2020)] <- areaMeans(seasonMeans(out4$hra))
 
-# BUG: catch from HR
-unitSums(quantSums(stock.n(stk4) * harvest(stk4) * stock.wt(stk4)))
-unitSums(catch(stk4))
+# hy = 1-(1-h1)*(1-h2)*(1-h3)*(1-h4)
+hrya <- 1 - (1 - out$hra[,,,1]) * (1 - out$hra[,,,2]) *
+  (1 - out$hra[,,,3]) * (1 - out$hra[,,,4])
 
+harvest(stko)[, ac(2000:2020)] <- areaMeans(hrya)
+units(harvest(stko)) <- 'hr'
 
 # spwn, mid Q4
-m.spwn(stk4) <- harvest.spwn(stk4) <- 0.83
-
-# TODO: CHECK
+m.spwn(stko) <- harvest.spwn(stko) <- 0.83
 
 # EXTEND
-fut4 <- fwdWindow(stk4, end=2040)
+futo <- fwdWindow(stko, end=2040)
 
 # ASSIGN selectivities
-harvest(fut4)[, ac(2021:2040)] <- areaMeans(seasonMeans(out4$catch.sel))
+# TODO: catch.sel(FLStock/FLom) <- FLQuant +flr
+harvest(futo)[, ac(2021:2040)] <- areaMeans(seasonMeans(out$catch.sel))
 
 
 # -- BUILD FLSR
 
-srp <- out4$srpars
+srp <- out$srpars
 
 # CORRECT srpars$R0 for Q1
-srp$R0 <- srp$R0 * exp(c(seasonSums(out4$m[1,'2000','F', 1:3])))
-srp$v <- srp$v * exp(c(seasonSums(out4$m[1,'2000','F', 1:3])))
+srp$R0 <- srp$R0 * exp(c(seasonSums(out$m[1, 1, 'F', 1:3])))
 
-srr4 <- FLSR(model=bevholtss3, params=srp)
+# spr0y(stk) / rps$B0
+corr <- yearMeans((FLSRTMB::spr0y(stko) / 1000)) / (srp$v/srp$R0)
+srp$v <- srp$v * exp(c(seasonSums(out$m[1, 1,'F', 1:3]))) * c(corr)
+
+srr <- FLSR(model=bevholtss3, params=srp)
 
 # -- BUILD refpts
 
-rps <- out4$refpts
+rps <- out$refpts
 rps$R0 <- srp$R0
 rps$B0 <- srp$v
 
+# TODO: fwd(F=0), rec = R0 / srr
 
-# TODO: fwd(F=0), rec=R0
+tes0 <- fwd(fwdWindow(stko, end=2100),
+  sr=FLQuant(rep(srp$R0, each=80), dimnames=list(age='0',
+    year=2021:2100, iter=1:500)),
+  fbar=FLQuant(0, dimnames=list(year=2021:2100)))
 
-tes <- fwd(fut4,
-  sr=FLQuant(c(srp$R0), dimnames=list(age='0', year=2021:2040,
-    iter=seq(500))),
-  fbar=FLQuant(0, dimnames=list(year=2021:2040)))
+tesR <- fwd(fwdWindow(stko, end=2100), sr=srr,
+  fbar=FLQuant(0, dimnames=list(year=2021:2100)))
 
-plot(tes)
-plot(ssb(tes)[,,'F'] / rps$B0)
+plot(tes0, tesR)
 
-# TODO: fwd(F=0), rec=SRR
+plot(ssb(tes0)[,,'F'] / rps$B0, ssb(tesR)[,,'F'] / rps$B0) +
+  geom_hline(yintercept=1)
 
-tes <- fwd(fut4, sr=srr4, fbar=FLQuant(0, dimnames=list(year=2021:2040)))
+# PLOT on recalculated B0
+plot(ssb(tes0)[,,'F'] %/% (yearMeans((FLSRTMB::spr0y(stko) / 1000)) * srp$R0)) +
+  geom_hline(yintercept=1)
 
-plot(tes)
-plot(ssb(tes)[,,'F'] / rps$B0)
-
-# TODO: 
-
-harvest(fut4)[, ac(2000:2020)] <- recomputeHarvest(fut4)[, ac(2000:2020)]
-
-tes <- fwd(fut4, sr=srr4, fbar=FLQuant(0, dimnames=list(year=2021:2040)))
-
-plot(tes)
-plot(ssb(tes)[,,'F'] / rps$B0)
-
+# PREDICT R0
+predict(srr, ssb=FLQuant(c(srp$v), dimnames=list(year=1, iter=1:500)))
+srp$R0
 
 # -- BUILD FLom
 
-om4 <- FLom(stock=stk4, sr=srr4, refpts=out4$refpts)
-
-om4 <- fwdWindow(om4, end=2040)
+om <- fwdWindow(FLom(stock=stko, sr=srr, refpts=rps), end=2040)
 
 # DEVIANCES
 
-rdev <- residuals(unitSums(rec(stk4)),
-  predict(srr4, ssb=ssb(stk4)[,,'F']), 'log')
+rdev <- residuals(unitSums(rec(stko)),
+  predict(srr, ssb=ssb(stko)[,,'F']), 'log')
 
 # BUG: deviances<- append fails
-residuals(sr(om4)) <- rlnormar1(500, meanlog=0, sdlog=sqrt(yearVars(rdev)),
+residuals(sr(om)) <- rlnormar1(500, meanlog=0, sdlog=sqrt(yearVars(rdev)),
   rho=rho(rdev), years=2000:2040)
 
 
 # -- BUILD FLoem
 
-# PROPAGATE no unit/season stk
+# stk
 estk <- propagate(simplify(stk), 500)
 
-# ADD OM stk in 2000:2020
-# NOTE: SHOULD oem be single sex?
-estk[, ac(2000:2020)] <- simplify(stk4, 'unit')
+# ADD OM stk in 2000:2020, single sex
+estk[, ac(2000:2020)] <- simplify(stko, 'unit')
 
-# PLOT
-plot(FLStocks(SS3=simplify(stk), OEM=estk)) +
-  ggtitle("SS3 SA vs. OEM")
-
-# idx - LLCPUE1
+# idx - LLCPUE1_Q1-Q4
 
 # SET index.q
 index.q <- Reduce(sbind, lapply(1:4, function(i)
-  log(window(index(ids[[i]]), start=2000) / out4$index.hat[,,,i])))
+  log(window(index(ids[[i]]), start=2000) / out$index.hat[,,,i])))
 
-# PICKUP index
-ll1 <- propagate(ids[[1]], 500)
-range(ll1, c('startf', 'endf')) <- c(0, 0.25)
+# PICK index
+ind <- propagate(ids[['LLCPUE1_Q1']], 500)
+range(ind, c('startf', 'endf')) <- c(0, 0.25)
 
-# ADD index.q & catch.wt
-index.q(ll1)[, ac(2000:2020)] <- exp(index.q[,,,1]) 
-catch.wt(ll1) <- unitMeans(catch.wt(stk)[,,,1])[, ac(1975:2020)]
+# BUG:
+effort(ind) <- unitSums(effort(ind))
+sel.pattern(ind) <- unitMeans(sel.pattern(ind))
+catch.n(ind) <- unitMeans(catch.n(ind))
 
-plot(FLIndices(SS=ll1, ABC=survey(stk4, ll1[, ac(2000:2020)]))) +
-  ggtitle("LLCPUE1_Q1 vs. survey(stk)")
+# ADD bias-corrected index.q
+index.q(ind)[, ac(2000:2020)] <- 
+  exp(index.q[,,,1] - 0.5 * sqrt(iterVars(index.q[,,,1])) ^ 2)
 
-idx <- FLIndices(LLCPUE1=ll1)
+# ADD catch.wt Q1
+catch.wt(ind) <- catch.wt(stk)[,,,1][, ac(1975:2020)]
 
+# ADD sel.pattern: Q1, fleet (area) 1, Q1
+sel.pattern(ind)[, ac(2000:2020)] <- expand(out$catch.sel[,,,1,1],
+  year=2000:2020, fill=TRUE)
 
-#   index=out4$index.hat[,,,1],
-#   index.q=index.q[,,,1],
-#   index.var=out4$index.hat[,,,1] %=% 0.2,
-#   catch.wt=unitMeans(stock.wt(stk4)),
-#   sel.pattern=expand(unitMeans(out4$catch.sel[,,,1,1]),
-#   year=2000:2020, fill=TRUE),
-#   range=c(startf=0, endf=0.25))
-# 
-# LLCPUE1 <- qapply(LLCPUE1, function(x) {
-#   dimnames(x)$unit <- 'unique'
-#   dimnames(x)$season <- '1'
-#   dimnames(x)$area <- 'unique'
-#   return(x)
-#   }
-# )
+idx <- FLIndices(LLCPUE1=ind)
 
+survey(stock(om), idx)
 
 # deviances
-devs <- list(stk=FLQuants(catch.n=rlnorm(500, unitSums(catch.n(om4) %=% 0),
+devs <- list(stk=FLQuants(catch.n=rlnorm(500, unitSums(catch.n(om) %=% 0),
   0.3)))
 
-oem4 <- FLoem(observations=list(stk=fwdWindow(estk, end=2040),
+oem <- FLoem(observations=list(stk=fwdWindow(estk, end=2040),
   idx=fwdWindow(idx, end=2040)),
   deviances=devs, method=sampling.oem)
 
@@ -187,4 +172,4 @@ oem4 <- FLoem(observations=list(stk=fwdWindow(estk, end=2040),
 
 # -- SAVE
 
-save(om4, oem4, file='om4.rda', compress='xz')
+save(om, oem, file='data/om4b.rda', compress='xz')

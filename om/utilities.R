@@ -25,7 +25,7 @@
 
 # mc.output {{{
 
-mc.output <- function(x) {
+mc.output <- function(x, C) {
 
   nits <- length(x)
   dmns <- list(age=0:14, year=2000:2020, season=1:4, unit=c('F', 'M'))
@@ -61,13 +61,13 @@ mc.output <- function(x) {
     }
   ))
  
-  # HR @age
-  hra <- expand(areaMeans(hr), age=0:14, unit=c('F', 'M'), area=1:6,
+  # HR @age[a,y,s,f,u]
+  hra <- expand(hr, age=0:14, unit=c('F', 'M'),
     fill=TRUE) * expand(catch.sel, year=2000:2020, fill=TRUE)
 
   # catches (y, s, f)
   caf <- FLQuant(dimnames=list(year=2018:2020, season=1:4, area=1:6))
-  caf[] <- run4$C[19:21,,]
+  caf[] <- C[19:21,,]
   cap <- caf %/% areaSums(caf)
   sel <- yearMeans(areaMeans(catch.sel %*% cap))
   sel <- sel %/% apply(sel, 2:6, max)

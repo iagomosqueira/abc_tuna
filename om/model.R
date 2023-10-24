@@ -10,21 +10,23 @@
 
 library(mse)
 
-load('data/om4.rda')
+load('data/om4b.rda')
 
-mets <- list(Rec=function(x) unitSums(rec(x)), SSB=function(x) unitSums(ssb(x)),
-  Catch=function(x) unitSums(catch(x)), HR=function(x) unitMeans(hr(x)))
+mets <- list(Rec=function(x) unitSums(rec(x)),
+  SSB=function(x) unitSums(ssb(x)),
+  Catch=function(x) unitSums(catch(x)),
+  HR=function(x) unitMeans(hr(stock(x))))
 
 # - fwd(F=0)
 
-tf0 <- fwd(om4, control=fwdControl(year=2021:2040, quant='fbar', value=0))
+tf0 <- fwd(om, control=fwdControl(year=2021:2040, quant='fbar', value=0))
 
 plot(stock(tf0), metrics=mets) +
   geom_vline(xintercept=2020, linetype=3) +
   ggtitle("F=0")
 
 # NOTE: SHOULDN'T ssb recover to B0?
-plot(ssb(stock(tf0))[,,'F'] / refpts(om4)$B0) +
+plot(ssb(stock(tf0))[,,'F'] / refpts(om)$B0) +
   geom_hline(yintercept=1) +
   ggtitle("F=0, relative")
 
@@ -48,7 +50,7 @@ control <- mpCtrl(list(
   hcr=mseCtrl(method=fixedF.hcr, args=list(ftrg=0.21))
 ))
 
-mrun <- mp(om4, oem4, ctrl=control, args=list(iy=2020, fy=2030, frq=3))
+mrun <- mp(om, oem, ctrl=control, args=list(iy=2020, frq=3))
 
 plot(FLStocks(OM=window(stock(om4), end=2020), RUN=stock(mrun))) +
   ggtitle("perfect.sa + fixedF.hcr(0.1)")
@@ -73,7 +75,7 @@ control <- mpCtrl(list(
   hcr = mseCtrl(method=cpue.hcr, args=list(k1=0.2, k2=0.2, k3=0.2, k4=0.2,
     dlow = NA, dupp = NA, target=6))))
       
-crun <- mp(om4, oem4, ctrl=control, args=list(iy=2020, fy=2030, frq=3))
+crun <- mp(om, oem, ctrl=control, args=list(iy=2020, fy=2030, frq=3))
 
 plot(FLStocks(OM=window(stock(om4), end=2020), RUN=stock(prun))) +
   ggtitle("cpue.ind + cpue.hcr")
