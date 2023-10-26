@@ -57,7 +57,7 @@
 \begin{itemize}
     \item Timeline: 2000 to 2020 (covers all existing cohorts)
     \item Age, sex and quarterly structured population model
-    \item Beverton-Holt with exploited equilibirum initialisation
+    \item Beverton-Holt with exploited equilibrium initialisation
     \item Designed to mimic current assessment model structure
     \item Reproduces all key stock status variables:
         \vspace{0.25cm}
@@ -94,7 +94,7 @@
         \end{enumerate}
         \vspace{0.25cm}
     \item Integrate status information with LF \& CPUE data
-    \item Here where it diverges from assessment-to-OM approach
+    \item Here is where it diverges from assessment-to-OM approach
 \end{itemize}
 \end{frame}
 % frame 5
@@ -105,7 +105,9 @@
     \item $\bmsy$ ratio: 2019, 2020 mean 2.25, 2 with SD 0.35
     \item $\hmsy$ ratio: 2000, 2020 mean of 0.6 with SD 0.2
     \item Overfishing penalty: $\mathbb{P}\left(H/\hmsy>2\right)\leq 0.05$ 
-    \item (to remove small numbers of runs with very high $H$)
+\begin{itemize}
+    \item Removes small numbers of runs with very high $H$
+\end{itemize}
 \end{itemize}
 \end{frame}
 % frame 6
@@ -318,8 +320,11 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
 % frame 19
 \begin{frame}
     \frametitle{Future work}
-\begin{itemize}
     \item Exploring translating results to previous OM
+  \begin{itemize}
+    \item e.g. seasonality and reference points
+  \end{itemize}
+\begin{itemize}
     \item Checking short-term projections
     \item Implementing Bayesian cross-validation methods
     \item Possible spatial extensions (conflicting CPUE trends)
