@@ -108,8 +108,8 @@ ates <- ffwd(futo, sr=srr,
 par <- params(srr)
 
 rps <- brp(FLBRP(simplify(stko), sr=list(params=FLPar(
-  a=(par$v + (par$v - par$s * par$v) /(5 * par$s - 1)) / (par$v / par$R0),
-  b=(par$v - par$s * par$v) / (5 * par$s - 1)), model='bevholt')))
+  a=(par$v * 2 + (par$v * 2 - par$s * par$v * 2) /(5 * par$s - 1)) / (par$v * 2 / par$R0),
+  b=(par$v * 2 - par$s * par$v * 2) / (5 * par$s - 1)), model='bevholt')))
 
 rps2 <- brp(FLBRP(stko, sr=list(params=FLPar(
   a=(par$v + (par$v - par$s * par$v) /(5 * par$s - 1)) / (par$v / par$R0),
@@ -121,9 +121,10 @@ rpsf <- brp(FLBRP(stko[,,'F'], sr=list(params=FLPar(
 
 # FCrash WEIRD
 
-rep <- remap(refpts(rps))
+pts <- remap(refpts(rps))
+ptf <- remap(refpts(rpsf))
 
-save(stk, stky, hrya, stko, srr, tes, ates, rps, rps2, rpsf, rep,
+save(stk, stky, hrya, stko, srr, tes, ates, rps, rps2, rpsf, pts, ptf,
   file='data/om.rda', compress='xz')
 
 

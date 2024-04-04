@@ -40,9 +40,10 @@ plot(FLStocks(CORRECT=ates, ORIG=tes), metrics=total)
 (plot(remap(refpts(rpsf))) + ggtitle("Female"))
 
 # 
-plot(unitSums(ssb(ates)) / (rep$SB0)) + ggtitle("SB/SB0") +
+plot(unitSums(ssb(ates)) / (ptf$SB0)) + ggtitle("SB/SB0") +
   geom_hline(yintercept=1)
-plot(unitSums(ssb(ates)) / (rep$SB0 / 2)) + ggtitle("SB/(SB0 * 0.5)") +
+
+plot(unitSums(ssb(ates)) / (ptf$SB0 / 2)) + ggtitle("SB/(SB0 * 0.5)") +
   geom_hline(yintercept=1)
 
 dev.off()
