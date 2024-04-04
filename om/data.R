@@ -1,5 +1,5 @@
-# om.R - DESC
-# /home/mosqu003/Active/ABC_tuna+iotc/abc_tuna/om/om.R
+# data.R - LOAD SS£ model and add ABC output
+# abc_tuna/om/data.R
 
 # Copyright (c) WUR, 2023.
 # Author: Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
@@ -34,10 +34,14 @@ out <- mc.output(run$mcvars, run$C)
 
 # -- CREATE FLStock for om: 2000-2020, no seasons, 500 iters
 
-stko <- propagate(simplify(window(stk, start=2000), 'season'), 500)
+stko <- stky <- propagate(simplify(window(stk, start=2000), 'season'), 500)
 
 # ADD m, sum accross seasons
 m(stko)[, ac(2000:2020)] <- seasonSums(out$m)
+
+# ADD catch, sum accross seasons
+catch.n(stko)[, ac(2000:2020)] <- seasonSums(out$catch.n)
+catch(stko) <- computeCatch(stko)
 
 # ADD stock.n Q1
 stock.n(stko)[, ac(2000:2020)] <- out$stock.n[,,,1]
@@ -46,24 +50,28 @@ stock.n(stko)[, ac(2000:2020)] <- out$stock.n[,,,1]
 stock.n(stko)[1, ac(2000:2020)] <- out$stock.n[1, ac(2000:2020),, 4] *
   exp(seasonSums(out$m[1, ac(2000:2020),, 1:3]))
 
-# ADD harvest rate, mean over fleets (area) & seasons
+# COMPUTE harvest rate, mean over fleets (area) & seasons
 
-# hy = 1-(1-h1)*(1-h2)*(1-h3)*(1-h4)
+# hy = 1 - (1-h1) * (1-h2) * (1-h3) * (1-h4)
 hrya <- 1 - (1 - out$hra[,,,1]) * (1 - out$hra[,,,2]) *
   (1 - out$hra[,,,3]) * (1 - out$hra[,,,4])
+units(hrya) <- 'hr'
 
-harvest(stko)[, ac(2000:2020)] <- areaMeans(hrya)
-units(harvest(stko)) <- 'hr'
+# LIMIT to 0.9
+hrya[hrya > 0.9] <- 0.9
+
+# 1COMPUTE FaA
+harvest(stko) <- harvest(stock.n(stko), catch.n(stko), m(stko), recompute=TRUE)
 
 # spwn, mid Q4
 m.spwn(stko) <- harvest.spwn(stko) <- 0.83
 
 # EXTEND
-futo <- fwdWindow(stko, end=2040)
+futo <- fwdWindow(stko, end=2100)
 
 # ASSIGN selectivities
 # TODO: catch.sel(FLStock/FLom) <- FLQuant +flr
-harvest(futo)[, ac(2021:2040)] <- areaMeans(seasonMeans(out$catch.sel))
+harvest(futo)[, ac(2021:2100)] <- areaMeans(seasonMeans(out$catch.sel))
 
 
 # -- BUILD FLSR
@@ -71,42 +79,53 @@ harvest(futo)[, ac(2021:2040)] <- areaMeans(seasonMeans(out$catch.sel))
 srp <- out$srpars
 
 # CORRECT srpars$R0 for Q1
-srp$R0 <- srp$R0 * exp(c(seasonSums(out$m[1, 1, 'F', 1:3])))
+# srp$R0 <- srp$R0 * exp(c(seasonSums(out$m[1, 1, 'F', 1:3])))
 
 # spr0y(stk) / rps$B0
-corr <- yearMeans((FLSRTMB::spr0y(stko) / 1000)) / (srp$v/srp$R0)
-srp$v <- srp$v * exp(c(seasonSums(out$m[1, 1,'F', 1:3]))) * c(corr)
+# corr <- yearMeans((FLSRTMB::spr0y(stko) / 1000)) / (srp$v/srp$R0)
+# srp$v <- srp$v * exp(c(seasonSums(out$m[1, 1,'F', 1:3]))) * c(corr)
 
 srr <- FLSR(model=bevholtss3, params=srp)
 
+# fwd(F=0, srr), B, R. spr0
+tes <- ffwd(futo, sr=srr,
+  fbar=FLQuant(0, dimnames=list(year=2021:2100, unit=c('F', 'M'))))
+
+# COMPUTE ratio spr0s
+ratio <- (ssb(tes)[,'2100','F'] / rec(tes)[,'2100', 'F']) / (srp$v / srp$R0) 
+
+osrr <- srr
+
+# NEW SRR
+
+params(srr)$R0 <- params(srr)$R0 * ratio
+
+ates <- ffwd(futo, sr=srr,
+  fbar=FLQuant(0, dimnames=list(year=2021:2100)))
+
 # -- BUILD refpts
 
-rps <- out$refpts
-rps$R0 <- srp$R0
-rps$B0 <- srp$v
+par <- params(srr)
 
-# TODO: fwd(F=0), rec = R0 / srr
+rps <- brp(FLBRP(simplify(stko), sr=list(params=FLPar(
+  a=(par$v + (par$v - par$s * par$v) /(5 * par$s - 1)) / (par$v / par$R0),
+  b=(par$v - par$s * par$v) / (5 * par$s - 1)), model='bevholt')))
 
-tes0 <- fwd(fwdWindow(stko, end=2100),
-  sr=FLQuant(rep(srp$R0, each=80), dimnames=list(age='0',
-    year=2021:2100, iter=1:500)),
-  fbar=FLQuant(0, dimnames=list(year=2021:2100)))
+rps2 <- brp(FLBRP(stko, sr=list(params=FLPar(
+  a=(par$v + (par$v - par$s * par$v) /(5 * par$s - 1)) / (par$v / par$R0),
+  b=(par$v - par$s * par$v) / (5 * par$s - 1)), model='bevholt')))
 
-tesR <- fwd(fwdWindow(stko, end=2100), sr=srr,
-  fbar=FLQuant(0, dimnames=list(year=2021:2100)))
+rpsf <- brp(FLBRP(stko[,,'F'], sr=list(params=FLPar(
+  a=(par$v + (par$v - par$s * par$v) /(5 * par$s - 1)) / (par$v / par$R0),
+  b=(par$v - par$s * par$v) / (5 * par$s - 1)), model='bevholt')))
 
-plot(tes0, tesR)
+# FCrash WEIRD
 
-plot(ssb(tes0)[,,'F'] / rps$B0, ssb(tesR)[,,'F'] / rps$B0) +
-  geom_hline(yintercept=1)
+rep <- remap(refpts(rps))
 
-# PLOT on recalculated B0
-plot(ssb(tes0)[,,'F'] %/% (yearMeans((FLSRTMB::spr0y(stko) / 1000)) * srp$R0)) +
-  geom_hline(yintercept=1)
+save(stk, stky, hrya, stko, srr, tes, ates, rps, rps2, rpsf, rep,
+  file='data/om.rda', compress='xz')
 
-# PREDICT R0
-predict(srr, ssb=FLQuant(c(srp$v), dimnames=list(year=1, iter=1:500)))
-srp$R0
 
 # -- BUILD FLom
 
@@ -169,6 +188,7 @@ oem <- FLoem(observations=list(stk=fwdWindow(estk, end=2040),
   deviances=devs, method=sampling.oem)
 
 # TODO: verify(oem, om)
+
 
 # -- SAVE
 

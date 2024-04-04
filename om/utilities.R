@@ -1,5 +1,5 @@
 # utilities.R - DESC
-# /home/mosqu003/Active/ABC_tuna+iotc/abc_tuna/om/utilities.R
+# abc_tuna/om/utilities.R
 
 # Copyright (c) WUR, 2023.
 # Author: Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
@@ -63,14 +63,18 @@ mc.output <- function(x, C) {
  
   # HR @age[a,y,s,f,u]
   hra <- expand(hr, age=0:14, unit=c('F', 'M'),
-    fill=TRUE) * expand(catch.sel, year=2000:2020, fill=TRUE)
+    fill=TRUE) %*% catch.sel
 
   # catches (y, s, f)
   caf <- FLQuant(dimnames=list(year=2018:2020, season=1:4, area=1:6))
   caf[] <- C[19:21,,]
   cap <- caf %/% areaSums(caf)
+ 
   sel <- yearMeans(areaMeans(catch.sel %*% cap))
   sel <- sel %/% apply(sel, 2:6, max)
+
+  # catch.n
+  catch.n <- areaSums(stock.n %*% hra)
 
   # - FLPar
 
@@ -111,7 +115,8 @@ mc.output <- function(x, C) {
 
   # TODO: Rtot does not match unitSums(N[1,,,4])
 
-  return(list(stock.n=stock.n, m=m, catch.sel=catch.sel, ssb=ssb, dep=dep,
+  return(list(stock.n=stock.n, m=m, catch.n=catch.n, catch.sel=catch.sel,
+    ssb=ssb, dep=dep,
     srpars=srpars, refpts=refpts, hr=hr, rec=rec, index.hat=index.hat,
     hra=hra))
 }
