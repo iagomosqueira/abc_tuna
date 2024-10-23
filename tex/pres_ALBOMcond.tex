@@ -34,11 +34,12 @@
 
 \begin{document}
 \maketitle
+
 % frame 1
 \begin{frame}
 \frametitle{Outline}
 \begin{itemize}
-    \item Presentation of paper \textit{IOTC--2023--WPM14--13}
+    \item Presentation of paper \textit{IOTC--2024--WPM15--08}
     \item Conditioning of ALB OMs using ABC MCMC approach:
         \vspace{0.25cm} 
         \begin{enumerate}
@@ -51,6 +52,7 @@
         \end{enumerate}
 \end{itemize}
 \end{frame}
+
 % frame 2
 \begin{frame}
 \frametitle{OM model structure: population dynamics}
@@ -67,6 +69,7 @@
         \end{enumerate}
 \end{itemize}
 \end{frame}
+
 % frame 3
 \begin{frame}
 \frametitle{OM model structure: fishery dynamics}
@@ -78,6 +81,7 @@
     \item Seasonal \vs annual catchability explored
 \end{itemize}
 \end{frame}
+
 % frame 4
 \begin{frame}
 \frametitle{Stock status prior information}
@@ -97,6 +101,7 @@
     \item Here is where it diverges from assessment-to-OM approach
 \end{itemize}
 \end{frame}
+
 % frame 5
 \begin{frame}
 \frametitle{Suite of stock status priors}
@@ -108,6 +113,7 @@
     \item This removes small numbers of runs with very high $H$
 \end{itemize}
 \end{frame}
+
 % frame 6
 \begin{frame}
 \frametitle{Covering previous axes of uncertainty}
@@ -119,6 +125,7 @@
     \item CPUE series: seasonal $q$ using fleet 1 and 3 \emph{separately}
 \end{enumerate}
 \end{frame}
+
 % frame 7
 \begin{frame}
 \frametitle{Constructing $\pi(h,M)$ prior}
@@ -138,6 +145,7 @@
     \item For $\veps=0.05$ correlation coefficient is -0.58
 \end{itemize}
 \end{frame}
+
 % frame 8
 \begin{frame}
 \frametitle{OM conditioning scenarios}
@@ -150,11 +158,13 @@
       \item \textbf{R1b}: same as \textbf{R1} with additional overfishing penalty
       \item \textbf{R2}: same as \textbf{R1} but $\sigr$ estimated
       \item \textbf{R2a}: same as \textbf{R1a} but $\sigr$ estimated 
+      \item \textbf{R2b}: same as \textbf{R1b} but $\sigr$ estimated 
       \item \textbf{R3}: same as \textbf{R1} with 1\% \textit{p.a.} $\uparrow$ $q$ trend
       \item \textbf{R3a}: same as \textbf{R1a} with 1\% \textit{p.a.} $\uparrow$ $q$ trend
   \end{enumerate}
 \end{itemize}
 \end{frame}
+
 % frame 9
 \begin{frame}
     \frametitle{Approximate Bayesian Computation (ABC)}
@@ -171,6 +181,7 @@
     \item Custom MCMC algorithm to sample from $\tilde\pi(\xtheta\,|\,D)$
 \end{itemize}
 \end{frame}
+
 % frame 10
 \begin{frame}
     \frametitle{Discrepancy function \& priors}
@@ -192,6 +203,7 @@
         \end{enumerate} 
 \end{itemize}
 \end{frame}
+
 % frame 11
 \begin{frame}
     \frametitle{Fits to data: CPUE indices}
@@ -280,6 +292,7 @@ R1a   & 0.56 (0.4–0.72)  & 0.48 (0.3–0.69)  & 2.01 (1.42–2.61) & 0.68 (0.3
 R1b   & 0.74 (0.61–0.9)  & 0.42 (0.24–0.54) & 1.98 (1.16–2.49) & 0.98 (0.46–2.4) \\
 R2    & 0.71 (0.57–0.84) & 0.41 (0.21–0.55) & 1.91 (0.99–2.53) & 1.22 (0.45–3.57) \\
 R2a   & 0.56 (0.41–0.72) & 0.47 (0.28–0.71) & 2.03 (1.3–2.54)  & 0.65 (0.34–1.4) \\
+R2a   & 0.58 (0.40–0.69) & 0.46 (0.28–0.74) & 1.98 (1.35–2.59)  & 0.72 (0.39–1.34) \\
 R3    & 0.78 (0.6–0.91)  & 0.38 (0.15–0.52) & 1.77 (0.7–2.44)  & 1.4 (0.58–5.06) \\
 R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.35–1.45) \\
             & & & & \\
@@ -298,10 +311,32 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
     \item \textbf{R1b}: \emph{very} similar to \textbf{R1}, removes v. high late $\mathcal{H}_y$
     \item \textbf{R2}: pushes for higher $\sigr$ median 0.41 \vs 0.3
     \item \textbf{R2a}: very consistent with 0.3 - just increases certainty
+    \item \textbf{R2b}: potential reference case
     \item \textbf{R3}: similar to \textbf{R1} but more pessimistic recently
     \item \textbf{R3a}: similar to \textbf{R1a} but more pessimistic recently 
 \end{itemize}
 \end{frame}
+
+% frame 18
+\begin{frame}
+    \frametitle{Operating model grid}
+\begin{itemize}
+    \item Reference case: OM 2b
+    \item Reference set: OMs 1, 2 and 3
+    \item Robustness set: low recruitment period, lower sampling area 1
+\end{itemize}
+\end{frame}
+
+% frame 18
+\begin{frame}
+    \frametitle{Simulation design}
+\begin{itemize}
+    \item Tuning for 50, 60 and 70$\%$ Kobe green
+    \item CPUE-based MP (as SWO)
+    \item Surplus production (JABBA) with buffer HCR
+\end{itemize}
+\end{frame}
+
 % frame 18
 \begin{frame}
     \frametitle{Overall summary}
@@ -315,15 +350,26 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
     \item Able to generate key MP data inputs
 \end{itemize}
 \end{frame}
+
 % frame 19
 \begin{frame}
-    \frametitle{Future work}
+    \frametitle{Next steps: OM}
 \begin{itemize}
-    \item Translating to previous OM (seasonality, ref. pts.)
-    \item Checking short-term projections
+    \item Final checks on seasonal OM projections
     \item Implementing Bayesian cross-validation methods
-    \item Possible spatial extensions (conflicting CPUE trends)
+    \item Future work: Possible spatial extensions (conflicting CPUE trends)
 \end{itemize}
 \end{frame}
+
+% frame 19
+\begin{frame}
+    \frametitle{Next steps: MPs}
+\begin{itemize}
+    \item Testing model-free and JABBA-based MPs
+    \item Tuning for all three objectives
+    \item Robustness tests
+\end{itemize}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \end{document}
