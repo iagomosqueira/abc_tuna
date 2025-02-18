@@ -126,26 +126,6 @@
 \end{enumerate}
 \end{frame}
 
-% frame 7
-\begin{frame}
-\frametitle{Constructing $\pi(h,M)$ prior}
-\begin{itemize}
-    \item Define marginal priors for both parameters
-    \item $h$ mean 0.8, CI 0.7--0.9; $M$ mean 0.3, CI 0.27--0.33
-    \item Process:
-        \vspace{0.2cm}
-        \begin{enumerate}
-            \item Calculate $\tdel=\bmsy/B_0$ for mean $h$ \& $M$
-            \item Simulate $h$ and $M$ from marginal priors
-            \item Define a tolerance interval $\veps$
-            \item Accept values of $\{h,M\}$ within $\veps$ of $\tdel$
-            \item Calculate correlation in retained samples of $\{h,M\}$
-        \end{enumerate}
-        \vspace{0.2cm}
-    \item For $\veps=0.05$ correlation coefficient is -0.58
-\end{itemize}
-\end{frame}
-
 % frame 8
 \begin{frame}
 \frametitle{OM conditioning scenarios}
@@ -319,13 +299,35 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
 
 % frame 18
 \begin{frame}
-    \frametitle{Operating model grid}
+    \frametitle{Operating model grids}
 \begin{itemize}
-    \item Reference case: OM 2b
-    \item Reference set: OMs 1, 2 and 3
-    \item Robustness set: low recruitment period, lower sampling area 1
+    \item Reference set: full MCMC samples from OM 2b
+    \item Robustness OMs set: 2a, 3
+    \item Robustness scenarios: 
+        \begin{enumerate} 
+            \item future recruitment ``failure'' 
+            \item catchability ``regimes''
+            \item Trends in growth/maturity/natural mortality
+            \item alternative precision scenarios for CPUE
+            \item Implementation error alternatives
+        \end{enumerate}
 \end{itemize}
 \end{frame}
+
+% frame 19
+\begin{frame}
+    \frametitle{Projection dynamics}
+\begin{itemize}
+    \item Comparing run 2b (L) \& 2a (R) on 30,000 \& 40,000t
+\end{itemize}
+    \begin{figure}
+    \begin{center}   
+        \includegraphics[width=4cm,height=4cm]{figs/run5b_dep_proj_40k.pdf}\includegraphics[width=4cm,height=4cm]{figs/run5a_dep_proj_40k.pdf}
+        \includegraphics[width=4cm,height=4cm]{figs/run5b_dep_proj_30k.pdf}\includegraphics[width=4cm,height=4cm]{figs/run5a_dep_proj_30k.pdf} 
+    \end{center}
+    \end{figure}
+\end{frame}
+
 
 % frame 18
 \begin{frame}
@@ -355,10 +357,25 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
 \begin{frame}
     \frametitle{Next steps: OM}
 \begin{itemize}
-    \item Final checks on seasonal OM projections
-    \item Implementing Bayesian cross-validation methods
+    \item Implementing Bayesian cross-validation (comp. hard...)
     \item Future work: Possible spatial extensions (conflicting CPUE trends)
 \end{itemize}
+\end{frame}
+
+% frame 19
+\begin{frame}
+    \frametitle{Next steps: Which CPUE series?}
+\begin{itemize}
+    \item \textit{A priori} fleets 1 and 3 plausible
+    \item Fleet 1 gives more information on scale
+    \item Fleet 3 implies more optimistic current status
+    \item MASE for CPUE fleet 1 (L) and 3 (right)
+\end{itemize}
+    \begin{figure}
+    \begin{center}   
+        \includegraphics[width=4.5cm,height=4.5cm]{figs/mase/r5bmase.png}\includegraphics[width=4.5cm,height=4.5cm]{figs/mase/r5amase.png}
+    \end{center}
+    \end{figure}
 \end{frame}
 
 % frame 19
@@ -368,6 +385,14 @@ R3a   & 0.63 (0.48–0.77) & 0.42 (0.25–0.59) & 1.94 (1.23–2.5)  & 0.71 (0.3
     \item Testing model-free and JABBA-based MPs
     \item Tuning for all three objectives
     \item Robustness tests
+\end{itemize}
+\end{frame}
+
+% frame 19
+\begin{frame}
+    \frametitle{Thanks}
+\begin{itemize}
+    \item Happy to take comments/questions
 \end{itemize}
 \end{frame}
 
