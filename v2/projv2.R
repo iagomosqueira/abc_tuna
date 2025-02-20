@@ -11,7 +11,7 @@ library(parallel)
 library(mvtnorm)
 source("utilities.R")
 
-load("alb_abc_run5a.rda")
+load("runs/alb_abc_run5a.rda")
 
 ##############################
 # all-in-one projection code #
@@ -38,8 +38,8 @@ for(y in 1:nyprj) Cproj[y,,,] <- prj.ctrl$TAC*pcbar
 
 sela.mc <- array(dim=c(na,ns,2,nf,nitsx))
 Ninit <- array(dim=c(na,ns,2,nitsx))
-R0.mc <- B0.mc <- hh.mc <- M.mc <- spr0.mc <- sigmar.mc <- rep(NA,nitsx)
-q.mc <- array(dim=c(ns,nitsx))
+R0.mc <- B0.mc <- hh.mc <- M.mc <- spr0.mc <- sigmar.mc <- bmsy.mc <- rep(NA,nitsx)
+q.mc <- hmsy.mc <- array(dim=c(ns,nitsx))
 dep.mc <- array(dim=c(ny,nitsx))
 
 # extract MCMC variables - only have to do this once!
@@ -59,6 +59,8 @@ for(n in 1:nitsx) {
   spr0.mc[n] <- B0.mc[n]/R0.mc[n]
   Ninit[,,,n] <- mcvars[[n]]$N[ny,,,]
   dep.mc[,n] <- tmp$dep
+  hmsy.mc[,n] <- tmp$hmsy
+  bmsy.mc[n] <- tmp$Bmsy
   resq <- log(I[,,fcpue]/mcvars[[n]]$Ihat)
   if(seasonq) q.mc[,n] <- exp(apply(resq,2,mean))
   if(!seasonq) q.mc[n] <- mean(resq)
@@ -85,4 +87,28 @@ dq <- apply(depall.mc,1,quantile,c(0.025,0.5,0.975))
 plot(yrs.prj,dq[2,],ylim=c(0,max(dq[3,])),type='l',col='blue',lwd=1.5)
 lines(yrs.prj,dq[1,],lty=2,lwd=2,col='blue')
 lines(yrs.prj,dq[3,],lty=2,lwd=2,col='blue')
+
+######################
+# Kobe probabilities #
+######################
+
+# only coding this for projections so don't have to reconstruct everything else...
+# but if you want historical I can show you how to glue it all when i get back...
+
+# key ratios
+
+bmsy.rat <- apply(Shat,c(1,2),function(x,bmsy.mc){x <- x/bmsy.mc},bmsy.mc)
+hmsy.rat <- apply(Hhat,c(1,2,4),sum)
+for(y in 1:nyprj) hmsy.rat[y,,] <- hmsy.rat[y,,]/hmsy.mc
+
+# define age range for Kobe calcs
+
+kobe.yrs <- 6:10
+
+# probability calculation
+
+bx <- as.vector(bmsy.rat[kobe.yrs,,]) 
+hx <- as.vector(hmsy.rat[kobe.yrs,,])
+pgreen <- length(bx[bx>1])*length(hx[hx<1])/(length(bx)*length(hx))
+pgreen
 
