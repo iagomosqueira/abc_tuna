@@ -2192,8 +2192,9 @@ get.mcmc2.vars <- function(mcpars) {
     varlist[[nn]][['dep']] <- xx$S[,srec-1]/xx$B0
     varlist[[nn]][['dbmsy']] <- xx$S[,srec-1]/xx$Bmsy
     varlist[[nn]][['Cmsy']] <- xx$Cmsy
-    
+    varlist[[nn]][['Bmsy']] <- xx$Bmsy
     hmsy <- xx$Hmsy
+    varlist[[nn]][['hmsy']] <- hmsy
     hy <- apply(xx$H[,,],c(1,2),sum)
     hmsyrat <- apply(apply(hy,1,function(x,hmsy){x <- x/hmsy},hmsy),2,mean)
     varlist[[nn]][['hmsyrat']] <- hmsyrat
