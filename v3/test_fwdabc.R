@@ -25,7 +25,7 @@ pcbar <- as.matrix(fread('data/pcbar.dat'))
 load('data/pla.rda')
 
 # LOAD om
-# load('output/om5b.rda')
+load('data/om5b.rda')
 
 # ADD HR attribute.  TODO: SET as slot
 attr(om, 'harvest') <- FLQuants(ALB=setunits(expand(n(biol(om)), area=1:6) %=% as.numeric(NA), 'hr'))
@@ -34,17 +34,8 @@ attr(om, 'hrbar') <- FLQuants(ALB=setunits(expand(quantSums(n(biol(om))), area=1
 
 # --- TESTS
 
-its <- seq(1, 100)
+its <- seq(500)
 iy <- 2017
-
-# - TEST fwd iy:2020 with no catch
-
-ctrl <- fwdControl(year=iy:2020, quant="catch", value=0)
-
-tes1 <- fwdabc.om(iter(om, its), ctrl, pcbar=pcbar, pla=pla)
-
-(plot(biol(tes1$om)) + geom_vline(xintercept=ISOdate(iy,1,1))) +
-(plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(iy,1,1)))
 
 # - TEST fwd 2011:2020 with historical catch
 # BUG: differences maybe due to recruitment deviances
@@ -59,6 +50,26 @@ tes2 <- fwdabc.om(iter(om, its), ctrl, pcbar=pcbar, pla=pla)
 
 (plot(biol(iter(tes2$om, its))) + geom_vline(xintercept=ISOdate(2011,1,1))) +
 (plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(2011,1,1)))
+
+Reduce('+', lapply(fisheries(om), function(x)
+  unitSums(seasonSums(landings(x[[1]])[,2017:2020,,,,]))))
+
+ref <- Reduce('+', lapply(fisheries(om), function(x) unitSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
+
+tes <- Reduce('+', lapply(fisheries(tes2$om), function(x) unitSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
+
+com <- ref/tes
+all.equal(c(com[, '2017']), rep(1, 500), tolerance=0.001)
+
+# - TEST fwd iy:2020 with no catch
+
+ctrl <- fwdControl(year=iy:2020, quant="catch", value=0)
+
+tes1 <- fwdabc.om(iter(om, its), ctrl, pcbar=pcbar, pla=pla)
+
+(plot(biol(tes1$om)) + geom_vline(xintercept=ISOdate(iy,1,1))) +
+(plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(iy,1,1)))
+
 
 
 # TODO: RUN with actual rec

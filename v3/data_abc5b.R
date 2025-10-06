@@ -29,6 +29,7 @@ library(FLCore)
 library(ggplotFL)
 library(parallel)
 library(mvtnorm)
+library(mse)
 source("utilities.R")
 
 sourceCpp("utilities/init_pdyn.cpp")
@@ -38,9 +39,9 @@ sourceCpp("utilities/pdyn_lfcpue.cpp")
 # NC by fleet [y, s, f]
 # 
 
-#load('../data/data.RData')
 load("data/alb_abcdata.rda")
 load("data/hmuprior.rda")
+load("data/base.rda")
 
 # fnscale 
 fnscale <- 1
@@ -157,6 +158,17 @@ sd.cpue <- rep(NA,length(scpue))
 
 sdcpue <- mean(sd.cpue)
 
+fcpue <- 1
+scpue <- 1:4
+sd.cpue <- rep(NA,length(scpue))
+for(s in scpue) {
+  idf <- data.frame(t=yrs,y=log(I[,s,fcpue]))
+  ires <- loess(y~t,idf)
+  sd.cpue[s] <- sd(residuals(ires))
+}
+
+sdcpue <- mean(sd.cpue)
+
 # KLmax
 
 KLmax <- 0.8 # consistent with minimum Neff = 20 multinomial
@@ -195,13 +207,14 @@ rwsd[paridx[[1]]] <- c(0.1,0.05)
 rwsd[paridx[[2]]] <- 0.08
 rwsd[paridx[[3]]] <- 0.025
 
+# TEST
 nits1 <- 10 # total number of retained samples
 system.time(zzz <- mcmc5.abc(nits1))
 zzz$acp/nits1
 
 # parallelised efficient version
 
-arvecold <- zzz$pars[nits1,1:npar]
+parvecold <- zzz$pars[nits1,1:npar]
 hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 sigmarold <- zzz$pars[nits1,npar+3]
@@ -209,10 +222,102 @@ nits <- 500
 ncore <- 5
 thin <- 100
 mcnits <- floor(nits/ncore)
+
+# SAVE image
+save.image(file="data/image/abc5b.rda", compress="xz")
+
+# RUN
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc5.abc,mc.cores=ncore))
+
+# EXTRACT
+mcpars <- do.call(rbind, lapply(mczzz, '[[', 'pars'))
+mcvars <- get.mcmc2.vars(mcpars)
 
 # SAVE
 save(mczzz, file="data/mcmc/abc5b.rda", compress="xz")
+save(mcvars, C, file="data/mcvars/abc5b.rda", compress="xz")
+
+# --- CREATE om {{{
+
+load('data/mcmc/abc5b.rda')
+load('data/mcvars/abc5b.rda')
+
+# EXTRACT output for all iters
+out <- mc.output(mcvars, C)
+
+its <- dims(out$m)$iter
+
+# - FLBiol (stock.n, m)
+
+bio <- propagate(window(sbio, start=2000), its)
+
+n(bio) <- out$stock.n
+m(bio) <- out$m
+
+sr(bio) <- predictModel(model=bevholtss3()$model, params=out$srpars)
+
+# spwn, mid Q4
+spwn(bio)[,,,4] <- 0.5
+
+# FIX mat BUG: CHECK readFLSss3 +ss3om 
+mat(bio)[,,'F',1:4] <- mat(bio)[,,'F',1]
+
+# DEVIANCES
+deviances(bio)[,,,4] <- residuals(
+  rec(bio)[,,,4],
+  expand(predict(sr(bio), ssb=out$ssb) / 2, unit=c('F', 'M'))
+)
+
+# - FLFisheries (catch.n, catch.sel)
+
+# FLCatch(es)
+cas <- Map(function(x, y) FLCatch(landings.n=x, landings.wt=wt(bio),
+  catch.sel=y, discards.n=x %=% 0, discards.wt=wt(bio)),
+  x=divide(out$catch.n, 5), y=divide(out$catch.sel %*% (out$catch.n %=% 1), 5))
+
+# FLFisheries
+fis <- FLFisheries(lapply(cas, function(x)
+  FLFishery(effort=unitSums(catch(cas[[1]])) %=% 0, ALB=x)))
+
+names(fis) <- c(paste0("LL", 1:4), "PS", "Other")
+
+om <- FLombf(biols=FLBiols(ALB=bio), fisheries=fis,
+  refpts=FLPars(ALB=out$refpts))
+
+
+# TEST: total catch
+unitSums(seasonSums(areaSums(Reduce('+', catch(fisheries(om))))))
+
+
+# TEST: fwdabc.om hindcast
+
+
+# - BUILD oem
+
+# idx: FLIndexBiomass by season, with sel.pattern by sex
+
+# BUG: mc.output to output FLQuants by fiosheru, not 'area'
+sp <- expand(divide(out$catch.sel, 5)[[1]], year=2000:2020)
+dimnames(sp)$area <- 'unique'
+
+NW <- FLIndexBiomass(index=out$index.hat %*% out$index.q,
+  index.q=expand(out$index.q, year=2000:2020),
+  sel.pattern=sp,
+  catch.wt=wt(biol(om)),
+  range=c(startf=0.5, endf=0.5))
+
+# stk: no units
+oem <- FLoem(observations=list(ALB=list(idx=FLIndices(NW=NW),
+  stk=simplify(stock(om)[[1]], 'unit'))), method=sampling.oem)
+
+survey(observations(oem)$ALB$stk, observations(oem)$ALB$idx)
+
+# TODO: verify(oem, om)
+
+# SAVE
+save(om, oem, file='data/om5b.rda', compress='xz')
+
+# }}}
 
 mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/(nits*thin)
 mcacp

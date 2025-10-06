@@ -18,7 +18,7 @@ mc.output <- function(x, C) {
 
   # - FLQuant [a, y, u, s, 1, i]
 
-  # stock.n (y, a, s, u) - N
+  # stock.n - N (y, a, s, u)
   out$stock.n <- Reduce(combine, lapply(x, function(i)
    FLQuant(aperm(i$N, c(2,1,4,3)), dimnames=dmns, units='1000') / 1000
   ))
@@ -33,18 +33,21 @@ mc.output <- function(x, C) {
    FLQuant(c(i$Ihat), dimnames=list(age='all', year=2000:2020, season=1:4))
   ))
 
-  # H [y, s, f] - hr
+  # hr - H [y, s, f]
   out$hr <- FLQuant(unlist(lapply(x, '[[', 'H')),
     dimnames=list(age='all', year=2000:2020, season=1:4, area=1:6,
     iter=seq(nits)), units='hr')
   out$hrs <- areaSums(out$hr)
 
-  # sela - catch.sel (a, s, u, f)
+  # catch.sel - sela (a, s, u, f)
   out$catch.sel <- Reduce(combine, lapply(x, function(i) {
-    res <- FLQuant(dimnames=list(age=0:14, year=2000, unit=c('F', 'M'),
-      season=1:4, area=1:6), units='')
-    res[] <- aperm(i$sela, c(1,3,2,4))
-    return(res %/% apply(res, 2:6, max))
+    # a, u, s, f
+    res <- FLQuant(c(aperm(i$sela, c(1,3,2,4))), dimnames=list(age=0:14,
+      unit=c('F', 'M'), season=1:4, area=1:6))
+
+    res <- expand(res, year=2000:2020, fill=TRUE)
+
+    return(res)
     }
   ))
  
@@ -58,8 +61,8 @@ mc.output <- function(x, C) {
   out$cap <- caf %/% areaSums(caf)
  
   # sel
-  sel <- yearMeans(areaMeans(out$catch.sel %*% out$cap))
-  out$sel <- sel %/% apply(sel, 2:6, max)
+  #sel <- yearMeans(areaMeans(out$catch.sel %*% out$cap))
+  #out$sel <- sel %/% apply(sel, 2:6, max)
 
   # catch.n
   out$catch.n <- out$stock.n %*% out$hra
@@ -1798,7 +1801,6 @@ mcmc5.abc <- function(nits) {
         accpt <- FALSE
 
       }
-
       if(accpt) {
 
         parvecold <- parvecnew
@@ -1980,7 +1982,7 @@ get.mcmc2.vars <- function(mcpars) {
     hx <- mcpars[nn,npar+1]
     Mx <- mcpars[nn,npar+2]
     xx <- sim(R0x,depx,hx,Mx,selparsx,epsrx,dms,pctarg,selidx)
-    list(R0x,depx,hx,Mx,selparsx,epsrx,dms,pctarg,selidx)
+    # list(R0x,depx,hx,Mx,selparsx,epsrx,dms,pctarg,selidx)
 
     # N Rtot SSB dep dbmsy Cmsy hmsyrat H Ihat LFhat B0 R0 M h sela
     varlist[[nn]] <- setNames(nm=list("N", "Rtot", "SSB", "dep", "dbmsy",
@@ -2012,7 +2014,7 @@ get.mcmc2.vars <- function(mcpars) {
     varlist[[nn]][['M']] <- Mx
     varlist[[nn]][['h']] <- hx
     varlist[[nn]][['rho']] <- c(rho(FLQuant(epsrx)))
-    varlist[[nn]][['sela']] <- get.sel.age(nf,nselg,selidx,selpars) 
+    varlist[[nn]][['sela']] <- get.sel.age(nf,nselg,selidx,selparsx) 
 
     if(nn %% 100 == 0) cat("Iteration",nn,"of",nnits,"\n")
   }
@@ -2249,7 +2251,7 @@ get.mcmc.vars <- function(varlist,vtype) {
 
 } # }}}
 
-### harvest {{{
+# harvest {{{
 
 setMethod('harvest', signature(object="FLmse", catch="missing"),
   function(object) {
@@ -2283,9 +2285,6 @@ setMethod('fbar', signature(object="FLombf"),
   function(object, value) {
     areaSums(unitSums(seasonSums(quantMeans(harvest(om)))))
 })
-
-
-
 
 # }}}
 
@@ -2360,34 +2359,47 @@ fwdabc.om <- function(om, ctrl, pcbar, pla, ...) {
   n(biols(om)[[1]])[, yrs,,,, it] <- 
     aperm(array(rei$N, dim=c(nyrs, na, 4, 2)), c(2,1,4,3)) / 1000
 
-  # EXTRACT harvest - H [y,s,f]
-  attr(om, 'harvest')[[1]][, yrs,,,, it]  <- 
-    # H[y,(g),s,f] %*$ S[a,y,g,s,f]
-    expand(FLQuant(rei$H, dimnames=list(year=yrs, season=1:4, area=1:6)),
-      unit=c('F', 'M')) %*% Reduce(abind, lapply(fisheries(om),
-    function(x) catch.sel(x[[1]])[, yrs,,,,it]))
-
-  # SUM across fisheries
-  attr(om, 'hrbar')[[1]][, yrs,,,, it]  <- 
-    areaSums(FLQuant(rei$H, dimnames=list(year=yrs, season=1:4, area=1:6)))
+  # COMPUTE hr: H_fyu = C_fyu / sum_as(N_ayus * W_ayus * S_fayus)
+  hrfi <- hrf(iter(om[, yrs],  it))
 
   # COMPUTE catch.n
-  can <- attr(om, 'harvest')[[1]][, yrs,,,, it] %*%
-    (n(biols(om)[[1]])[, yrs,,,, it])
+  can <- lapply(hrfi, function(x)
+    # CN_fayus = H_fyus %*% N_ayus
+    expand(x, age=0:14) %*% n(biol(om))[, yrs,,,, it])
+
+  # TEST: total catch
+  Reduce('+', lapply(fisheries(om), function(x)
+    unitSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
 
   # ASSIGN as landings.n per fleet
   for(f in seq(6))
-    fisheries(om)[[f]][[1]]@landings.n[, yrs,,,, it] <- can[,,,,f]
-    
-  # PRINT total catch per year
-  print(paste0(it, ' --'))
-  print(rowSums(array(rep(pcbar, each=nyrs), dim=c(nyrs, 4, 6)) * 
-    array(iters(ctrl)[, 2, it], dim=c(nyrs, 4, 6))))
-  print(c(Reduce('+', lapply(fisheries(om), function(x)
-    unitSums(seasonSums(landings(x[[1]])[,yrs,,,,it]))))))
-  print('# --')
+    fisheries(om)[[f]][[1]]@landings.n[, yrs,,,, it] <- can[[f]]
   }
+
+  # TEST: total catch
+  Reduce('+', lapply(fisheries(om), function(x)
+    uniSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
+
   return(list(om=om))
 }
 
 # }}}
+
+# hr {{{
+hrf <- function(om) {
+
+  # C_f / sum(S_f * N * W)
+  lapply(fisheries(om), function(x) {
+    res <- unitSums(catch(x[[1]])) / unitSums(quantSums(n(biol(om)) * wt(biol(om)) *
+    catch.sel(x[[1]])))
+    res <- ifelse(res > 0.9, 0.9, res)
+    units(res) <- 'hr'
+    return(res)
+  })
+}
+
+hr <- function(om) {
+  Reduce('+', hrf(om))
+}
+
+# }}} 

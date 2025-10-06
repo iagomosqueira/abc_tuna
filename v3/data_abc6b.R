@@ -116,7 +116,6 @@ vx <- (mux*cvx)^2
 alpR <- mux^2/vx
 betR <- mux/vx
 psigmaR <- sqrt(1/rgamma(1000,alpR,betR))
-hist(psigmaR)
 round(quantile(psigmaR,c(0.025,0.5,0.975)),2)
 
 # recruitment season
@@ -155,16 +154,6 @@ lidx <- unlist(lapply(paridx,length))
 fcpue <- 1
 scpue <- 1:4
 sd.cpue <- rep(NA,length(scpue))
-par(mfrow=c(2,2))
-for(s in scpue) {
-
-  idf <- data.frame(t=yrs,y=log(I[,s,fcpue]))
-  ires <- loess(y~t,idf)
-  plot(yrs,ires$fitted,type='l')
-  points(yrs,log(I[,s,fcpue]))
-  sd.cpue[s] <- sd(residuals(ires))
-
-}
 
 sdcpue <- mean(sd.cpue)
 
@@ -212,7 +201,6 @@ rwsd[paridx[[3]]] <- 0.025
 nits1 <- 10 # total number of retained samples
 system.time(zzz <- mcmc5.abc(nits1))
 zzz$acp/nits1
-boxplot(zzz$pars,outline=F,col='magenta')
 
 # parallelised efficient version
 
@@ -221,7 +209,7 @@ hold <- zzz$pars[nits1,npar+1]
 Mold <- zzz$pars[nits1,npar+2]
 sigmarold <- zzz$pars[nits1,npar+3]
 nits <- 500
-ncore <- 10
+ncore <- 5
 thin <- 100
 mcnits <- floor(nits/ncore)
 system.time(mczzz <- mclapply(rep(mcnits,ncore),mcmc5.abc,mc.cores=ncore))
@@ -235,7 +223,7 @@ save(mczzz, file="data/mcmc/abc6b.rda", compress="xz")
 save(mcvars, C, file="data/mcvars/abc6b.rda", compress="xz")
 
 #
-load("output/base.rda")
+load("data/base.rda")
 
 # EXTRACT output for all iters
 out <- mc.output(mcvars, C)

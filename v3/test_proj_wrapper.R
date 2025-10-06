@@ -75,13 +75,30 @@ abc.proj <- function(k) { # k is k-th MCMC iteration (parallel stuff)
 
 }
 
+dms
+srec
+R0
+hh
+psi
+epsrx
+spr0
+M
+as.vector(mata)
+as.vector(wta)
+as.vector(sela)
+nvec
+cvec
+as.vector(pla)
+fcpue
+
 # abc.om(om, ctrl)
 # dim(om) [a, y, 1, 4, 1, i]
 # [q, y, u, s, a, i]
 
 # INPUT:
 # OUTPUT: S (ssb), N (stock.n), H (hr), I (index), LF (lf), dep (depletion)
-tes <- abc.proj(9)
+
+tes <- abc.proj(1)
 
 reszz <- mclapply(1:nits,abc.proj,mc.cores=ncore)
 
