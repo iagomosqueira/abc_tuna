@@ -21,11 +21,14 @@ sourceCpp("utilities/pdyn_lfcpue.cpp")
 # LOAD pcbar (catch proportions by fleet & season)
 pcbar <- as.matrix(fread('data/pcbar.dat'))
 
-# LOAD ALK
+# LOAD ALK [len, age, season, sex]
 load('data/pla.rda')
 
 # LOAD om
 load('data/om5b.rda')
+
+# ASSIGN args to om@projection
+args(projection(om)) <- list(pla=pla, pcbar=pcbar)
 
 # ADD HR attribute.  TODO: SET as slot
 attr(om, 'harvest') <- FLQuants(ALB=setunits(expand(n(biol(om)), area=1:6) %=% as.numeric(NA), 'hr'))
@@ -34,7 +37,7 @@ attr(om, 'hrbar') <- FLQuants(ALB=setunits(expand(quantSums(n(biol(om))), area=1
 
 # --- TESTS
 
-its <- seq(500)
+its <- seq(100)
 iy <- 2017
 
 # - TEST fwd 2011:2020 with historical catch
@@ -45,11 +48,10 @@ ctrl <- fwdControl(year=iy:2020, quant="catch",
 
 tes2 <- fwdabc.om(iter(om, its), ctrl, pcbar=pcbar, pla=pla)
 
-(plot(biol(tes2$om)) + geom_vline(xintercept=ISOdate(2011,1,1))) +
-(plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(2011,1,1)))
+quantSums(unitSums(seasonSums(Reduce('+', catch(fisheries(tes2$om))))))
 
-(plot(biol(iter(tes2$om, its))) + geom_vline(xintercept=ISOdate(2011,1,1))) +
-(plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(2011,1,1)))
+(plot(biol(iter(tes2$om, its))) + geom_vline(xintercept=ISOdate(iy,1,1))) +
+(plot(biol(iter(om, its))) + geom_vline(xintercept=ISOdate(iy,1,1)))
 
 Reduce('+', lapply(fisheries(om), function(x)
   unitSums(seasonSums(landings(x[[1]])[,2017:2020,,,,]))))

@@ -2310,7 +2310,7 @@ fwdabc.om <- function(om, ctrl, pcbar, pla, ...) {
   }
 
   # TEST:
-  n(biol(om))[, yrs] <- as.numeric(NA)
+  # n(biol(om))[, yrs] <- as.numeric(NA)
 
   for(it in its) {
 
@@ -2328,7 +2328,7 @@ fwdabc.om <- function(om, ctrl, pcbar, pla, ...) {
     psi_=0.5,
     # - epsrx: future rec devs [year]
     # epsr_=c(deviances(om)[, yrs, 1, 1, 1, it]),
-    # TODO: deviances(biol(om))
+    # TODO: deviances(biol(om)) or sigmaR from mcvars
     epsr_=rnorm(nyrs,0,0.355),
     # - spr0: SRR B0/R0
     spr0_=c(params(sr(biol(om)))$v[,it] / (params(sr(biol(om)))$R0[,it] * 1000)),
@@ -2352,24 +2352,36 @@ fwdabc.om <- function(om, ctrl, pcbar, pla, ...) {
     # - fcpue: Index of fleet to generate CPUE
     fref_=1)
 
-  # CALL pdynlfcpue
+  # CALL pdynlfcpue, rei: S (ssb_fy), N, H, I, LF
   rei <- do.call(pdynlfcpue, inp)
 
   # EXTRACT n - N [y,a,s,u]
   n(biols(om)[[1]])[, yrs,,,, it] <- 
     aperm(array(rei$N, dim=c(nyrs, na, 4, 2)), c(2,1,4,3)) / 1000
+ 
+  # GET hr - H [y,s,f]
+  hri <- divide(FLQuant(rei$H, dimnames=list(year=yrs, season=seq(4), 
+    area=names(fisheries(om)))), 5)
+
+  sei <- lapply(fisheries(om), function(x) catch.sel(x[[1]]))
+
+  hri <- Map(function(h, s) expand(h, unit=c('F', 'M')) %*%
+      s[, yrs], h=hri, s=sei)
+
+  # COMPUTE catch.n_f
+  can <- lapply(hri, function(x) x %*% n(biols(om)[[1]])[, yrs,,,, it])
 
   # COMPUTE hr: H_fyu = C_fyu / sum_as(N_ayus * W_ayus * S_fayus)
-  hrfi <- hrf(iter(om[, yrs],  it))
+  #hrfi <- hrf(iter(om[, yrs],  it))
 
   # COMPUTE catch.n
-  can <- lapply(hrfi, function(x)
+  #can <- lapply(hrfi, function(x)
     # CN_fayus = H_fyus %*% N_ayus
-    expand(x, age=0:14) %*% n(biol(om))[, yrs,,,, it])
+  #  expand(x, age=0:14) %*% n(biol(om))[, yrs,,,, it])
 
   # TEST: total catch
   Reduce('+', lapply(fisheries(om), function(x)
-    unitSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
+    unitSums(seasonSums(catch(x)[[1]][, yrs]))))
 
   # ASSIGN as landings.n per fleet
   for(f in seq(6))
@@ -2378,7 +2390,10 @@ fwdabc.om <- function(om, ctrl, pcbar, pla, ...) {
 
   # TEST: total catch
   Reduce('+', lapply(fisheries(om), function(x)
-    uniSums(seasonSums(catch(x)[[1]][, ac(2017:2020)]))))
+    unitSums(seasonSums(catch(x)[[1]][, yrs]))))
+
+  Reduce('+', lapply(can,
+    function(x) quantSums(unitSums(seasonSums(x * wt(biol(om)[,yrs]))))))
 
   return(list(om=om))
 }

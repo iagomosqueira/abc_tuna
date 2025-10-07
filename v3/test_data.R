@@ -1,4 +1,4 @@
-# test_hr_catch.R - TEST hr, catch and catch match
+# test_data.R - TEST hr, catch and catch match
 # abc_tuna/v3/test.R
 
 # Copyright (c) WMR, 2025.
@@ -13,6 +13,8 @@ source("utilities.R")
 
 load('data/om5b.rda')
 
+# --- TEST hr and catch.n {{{
+
 # hr {{{
 hrf <- function(om) {
 
@@ -26,7 +28,7 @@ hrf <- function(om) {
     res <- ifelse(res > 0.9, 0.9, res)
 
     units(res) <- 'hr'
-    :
+    
     return(res)
   })
 }
@@ -53,8 +55,7 @@ quantSums(unitSums(seasonSums(Reduce('+', caw))))
 # INFO: ADD over ages(sexes(seasons(elements of catch by fishery list
 quantSums(unitSums(seasonSums(Reduce('+', catch(fisheries(om))))))
 
-
-# ---
+# DIRECT calculation on F1
 
 # TODO: fishery(om, 1)
 print(seasonSums(unitSums(catch(fisheries(om)[[1]][[1]]))))
@@ -72,5 +73,43 @@ quantSums(unitSums(seasonSums(ca1 * wt(biol(om)))))
 # and calculated from catch.n * catch.wt in om
 unitSums(seasonSums(catch(fisheries(om)[[1]][[1]])))
 
+# }}}
 
+# --- TEST fwdabc.om {{{
 
+library(Rcpp)
+library(parallel)
+library(mvtnorm)
+
+sourceCpp("utilities/init_pdyn.cpp")
+sourceCpp("utilities/msy_pdyn.cpp")
+sourceCpp("utilities/pdyn_lfcpue.cpp")
+
+# LOAD pcbar (catch proportions by fleet & season)
+pcbar <- as.matrix(fread('data/pcbar.dat'))
+
+# LOAD ALK [len, age, season, sex]
+load('data/pla.rda')
+
+# LOAD om
+load('data/om5b.rda')
+
+its <- seq(50)
+iy <- 2017
+
+# - TEST fwd iy:2020 with historical catch
+
+ctrl <- fwdControl(year=iy:2020, quant="catch",
+  value=c(unitSums(seasonSums(Reduce('+', catch(om))))[, ac(iy:2020),,,,1]))
+
+tes1 <- fwdabc.om(iter(om, its), ctrl, pcbar=pcbar, pla=pla)
+
+# GET catch
+quantSums(unitSums(seasonSums(Reduce('+', catch(fisheries(tes1$om))))))
+quantSums(unitSums(seasonSums(Reduce('+', catch(fisheries(om))))))
+
+# GET hr
+plot(Reduce('+', unitMeans(hrf(tes1$om))),
+  Reduce('+', unitMeans(hrf(om))))
+
+# }}}

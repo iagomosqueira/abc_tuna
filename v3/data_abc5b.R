@@ -319,51 +319,10 @@ save(om, oem, file='data/om5b.rda', compress='xz')
 
 # }}}
 
-mcacp <- apply(matrix(unlist(lapply(mczzz,function(x){x <- x$acp})),ncol=ngibbs,byrow=T),2,sum)/(nits*thin)
-mcacp
-mcpars <- mczzz[[1]]$pars
-mcloo <- mczzz[[1]]$cpuelogl
-for(i in 2:ncore) mcpars <- rbind(mcpars,mczzz[[i]]$pars)
-for(i in 2:ncore) mcloo <- rbind(mcloo,mczzz[[i]]$cpuelogl)
 
-mcvars <- get.mcmc2.vars(mcpars)
 
-# prior vs posterior sigmaR
 
-sigrpost <- mcpars[,npar+3]
-dpost <- density(sigrpost)
-dprior <- density(psigmaR)
-p1 <- dpost$y
-p1 <- p1/sum(p1)
-x1 <- dpost$x
-p2 <- dprior$y
-p2 <- p2/sum(p2)
-x2 <- dprior$x
-pmax <- max(c(max(p1),max(p2)))
-xmin <- min(c(min(x1),min(x2)))
-xmax <- max(c(max(x1),max(x2)))
 
-######################
-# variable summaries #
-######################
 
-# depletion (2000, 2020)
 
-varz <- matrix(nrow=nits,ncol=length(mcvars[[1]]$dep))
-for(nn in 1:nits) varz[nn,] <- mcvars[[nn]]$dep
-round(apply(varz[,c(1,21)],2,quantile,c(0.025,0.5,0.975)),2)
-
-# Bmsy ratio (2020)
-
-varz <- matrix(nrow=nits,ncol=length(mcvars[[1]]$dbmsy))
-for(nn in 1:nits) varz[nn,] <- mcvars[[nn]]$dbmsy
-round(quantile(varz[,21],c(0.025,0.5,0.975)),2)
-
-# Hmsy ratio (2020)
-
-varz <- matrix(nrow=nits,ncol=length(mcvars[[1]]$hmsyrat))
-for(nn in 1:nits) varz[nn,] <- mcvars[[nn]]$hmsyrat
-round(quantile(varz[,21],c(0.025,0.5,0.975)),2)
-
-save.image("alb_abc_run5b.rda")
 
